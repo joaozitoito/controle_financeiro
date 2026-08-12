@@ -1,0 +1,25 @@
+{
+  "name": "frameworks_web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "teste.js",
+  "scripts": {
+    "start":"node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaozitoito/frameworks_web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/joaozitoito/frameworks_web/issues"
+  },
+  "homepage": "https://github.com/joaozitoito/frameworks_web#readme",
+  "dependencies": {
+    "dayjs": "^1.11.21"
+  }
+}
