@@ -60,5 +60,3 @@ http://localhost:3000
 ```
 
 ## 📚 Projeto acadêmico
-
-Projeto desenvolvido para a disciplina de **Arquitetura de Projeto**.
