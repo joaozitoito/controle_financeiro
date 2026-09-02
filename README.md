@@ -60,3 +60,13 @@ http://localhost:3000
 ```
 
 ## 📚 Projeto acadêmico
+
+## Decisões
+
+### Decisão 1 - Organização do código
+
+**Data:** 02/09/2026
+**Contexto:** O projeto precisa de uma estrutura organizada de forma simples para poder separar as responsabilidades da aplicação.
+**Decisão:** Organizar cada feature separando API, lógica de negócio e componentes, mantendo essas responsabilidades em pastas próprias.
+**Consequências:** Cada parte da feature fica separada por responsabilidade, facilitando a manutenção e evolução do projeto.
+**Alternativa Descartada:** Agrupar todo o código por tipo de arquivo sem considerar a separação das responsabilidades da feature.

@@ -1,0 +1,1 @@
+aqui ficam as funções responsáveis pela comunicação com a API.
