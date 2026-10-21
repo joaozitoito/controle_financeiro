@@ -1,0 +1,7 @@
+# Ambientes locais em qualquer pasta do repositório; exemplos não contêm segredos.
+.env
+.env.*
+!.env.example
+
+# Saídas temporárias da validação no navegador.
+.playwright-mcp/
