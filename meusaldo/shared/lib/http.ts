@@ -17,7 +17,7 @@ export class ErroHttp extends Error {
   }
 }
 
-function obterUrlApi(): string {
+export function urlApi(): string {
   const valor = process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:3001";
   const url = new URL(valor);
 
@@ -34,7 +34,7 @@ function ehObjeto(valor: unknown): valor is Record<string, unknown> {
 
 /** O tipo T descreve o contrato esperado; não faz validação de esquema em runtime. */
 export async function requisitar<T>(caminho: `/${string}`, opcoes: RequestInit = {}): Promise<T> {
-  const urlBase = obterUrlApi();
+  const urlBase = urlApi();
   const cicloPedido = cicloSessao;
   const headers = new Headers(opcoes.headers);
   headers.set("Accept", "application/json");

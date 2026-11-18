@@ -10,10 +10,11 @@
 | `/despesas` | Listar, cadastrar, editar, excluir e filtrar despesas |
 | `/contas` | Contas a pagar do mês: cadastrar, editar, excluir e marcar como paga (cria a despesa) |
 | `/planejamento` | Limite de gastos por categoria no mês, com gasto e faixa de uso (azul, laranja, vermelho) |
+| `/conjunta` | Conta conjunta: gerar código de convite, entrar com um código, ver com quem compartilha e sair/encerrar |
 | URL inexistente | 404 com link para o resumo |
 
 Todas usam o layout compartilhado, menu ativo com aria-current, título próprio
-com sufixo MeuSaldo e idioma pt-BR. As cinco páginas financeiras exigem sessão;
+com sufixo MeuSaldo e idioma pt-BR. As seis páginas privadas exigem sessão;
 visitantes seguem para /login?retorno=..., sem montar o conteúdo privado.
 Conta autenticada em /login ou /registro segue para o destino financeiro seguro.
 
@@ -34,6 +35,11 @@ Conta autenticada em /login ou /registro segue para o destino financeiro seguro.
 | /auth/me | GET autenticado; usuário público e expiração (200), inválida (401) |
 | /auth/logout | POST autenticado; revoga token e remove cookie (204) |
 | /health | GET público; `{ "ok": true }` (200), usado pelo healthcheck do Compose |
+| /conjunta | GET autenticado; `{ papel, parceiro, conviteExpiraEm }` com papel individual, titular ou membro |
+| /conjunta/convite | POST; código de uso único válido por 24h (201), já vinculado (409) |
+| /conjunta/entrar | POST `{ codigo }`; vincula como membro (200), código inválido (400), inexistente/expirado (404), já vinculado (409), limite (429) |
+| /conjunta/sair | POST; membro sai ou titular encerra (204), sem conta conjunta (409) |
+| /eventos | GET autenticado; Server-Sent Events `{ tipo, recurso, autor }` a cada alteração nos dados compartilhados |
 
 As páginas Next.js não substituem esses endpoints. Métodos, payloads e status
 estão no README do backend. A comunicação usa NEXT_PUBLIC_API_URL.
@@ -54,6 +60,11 @@ X-MeuSaldo-Request: 1; cookies são enviados pelo navegador com credentials: inc
 9. Testar formulário incompleto, teclado, URL direta, voltar e endereço inexistente.
 10. Sair, criar outra conta e conferir que listas, filtros, recentes e totais são independentes.
 11. Recarregar para restaurar a sessão; sair e confirmar bloqueio de /saldo.
+12. Conta conjunta: com a conta A em um navegador, gerar o código em /conjunta. Com a
+    conta B em outro navegador (ou janela anônima), entrar com o código. A tela de A
+    mostra o vínculo e o aviso sozinha. Com A em /despesas, cadastrar uma despesa em B:
+    a lista de A atualiza em segundos com "B atualizou as despesas.". Sair em B devolve
+    os dados próprios de B; os lançamentos feitos juntos ficam com A.
 
 Executar esse roteiro somente com registros próprios de demonstração; não apagar dados reais.
 Os fluxos financeiros foram verificados na Fase 2 e repetidos com sessão na Fase 3.

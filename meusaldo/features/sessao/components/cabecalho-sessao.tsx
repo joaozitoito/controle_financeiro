@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Icone } from "@/shared/components/icone";
 import { Navegacao } from "@/shared/components/navegacao";
+import { TempoReal } from "@/shared/components/tempo-real";
 import { useSessao } from "./sessao-provider";
 
 const logo = <Link href="/saldo" className="flex min-h-11 items-center gap-2.5 rounded text-xl font-bold tracking-tight text-blue-700">
@@ -30,6 +31,7 @@ export function CabecalhoSessao() {
         </button>
       </div>
       {erro && <p role="alert" className="px-4 pb-3 text-sm text-red-800 lg:px-5">{erro}</p>}
+      <TempoReal usuarioId={usuario.id} />
     </header>;
   }
 

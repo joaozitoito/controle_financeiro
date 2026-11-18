@@ -14,6 +14,7 @@ import { COR_FAIXA, faixaOrcamento } from "@/shared/lib/orcamento";
 import { SeletorMes } from "@/shared/components/seletor-mes";
 import { COR_TOM, DataQuadrada } from "@/shared/components/data-quadrada";
 import { GraficoLinha, GraficoRosca } from "./graficos";
+import { ouvirAlteracoes } from "@/shared/lib/tempo-real";
 
 const PERIODOS = [12, 6, 3] as const;
 
@@ -68,6 +69,9 @@ export function PaginaSaldo() {
     });
     return () => controlador.abort();
   }, [mes, revisao]);
+
+  // Recarga silenciosa quando os dados mudam (aqui ou na conta conjunta).
+  useEffect(() => ouvirAlteracoes(() => setRevisao(valor => valor + 1)), []);
 
   function recarregar(proximoMes = mes) {
     setCarregando(true);

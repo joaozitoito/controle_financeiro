@@ -10,6 +10,7 @@ import { formatarMoeda } from "@/shared/lib/financeiro";
 import { COR_FAIXA, faixaOrcamento, lerLimite, type ResumoOrcamento } from "@/shared/lib/orcamento";
 import { mesAtual, nomeMes } from "@/shared/lib/periodo";
 import { consultarOrcamentos, salvarOrcamentos } from "../api/orcamentos";
+import { ouvirAlteracoes } from "@/shared/lib/tempo-real";
 
 const ERRO_LIMITE = "Informe um valor positivo com até duas casas, sem separador de milhar, ou deixe vazio.";
 
@@ -31,13 +32,15 @@ export function PaginaPlanejamento() {
   const [enviando, setEnviando] = useState(false);
   const ocupado = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
+  // Uma recarga ao vivo não apaga limites digitados e ainda não salvos.
+  const editado = useRef(false);
 
   useEffect(() => {
     const controlador = new AbortController();
     consultarOrcamentos(mes, controlador.signal).then(dados => {
       if (controlador.signal.aborted) return;
       setResumo(dados);
-      setFormulario(paraFormulario(dados));
+      if (!editado.current) setFormulario(paraFormulario(dados));
       setCarregando(false);
     }).catch((erro: unknown) => {
       if (controlador.signal.aborted) return;
@@ -47,7 +50,11 @@ export function PaginaPlanejamento() {
     return () => controlador.abort();
   }, [mes, revisao]);
 
+  // Recarga silenciosa quando os dados mudam (aqui ou na conta conjunta).
+  useEffect(() => ouvirAlteracoes(() => setRevisao(valor => valor + 1)), []);
+
   function recarregar(proximoMes = mes) {
+    editado.current = false;
     setCarregando(true);
     setErroLista("");
     setCampos({});
@@ -84,6 +91,7 @@ export function PaginaPlanejamento() {
     setEnviando(true);
     try {
       const dados = await salvarOrcamentos(mes, lista);
+      editado.current = false;
       setResumo(dados);
       setFormulario(paraFormulario(dados));
       setSucesso("Planejamento salvo com sucesso.");
@@ -164,6 +172,7 @@ export function PaginaPlanejamento() {
                         aria-describedby={campos[nome] ? `${id}-erro` : undefined}
                         onChange={evento => {
                           const valor = evento.target.value;
+                          editado.current = true;
                           setFormulario(anterior => ({ ...anterior, [nome]: valor }));
                           setCampos(anterior => ({ ...anterior, [nome]: "" }));
                         }}

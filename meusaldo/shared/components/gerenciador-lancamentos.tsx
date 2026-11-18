@@ -5,6 +5,7 @@ import { ErroHttp } from "@/shared/lib/http";
 import { consultarSaldo } from "@/shared/lib/saldo-api";
 import { CATEGORIAS } from "@/shared/lib/categorias";
 import { formatarData, formatarMoeda, validarFormulario, type ApiLancamentos, type FormularioLancamento, type Lancamento, type Totais } from "@/shared/lib/financeiro";
+import { ouvirAlteracoes } from "@/shared/lib/tempo-real";
 
 const vazio: FormularioLancamento = { descricao: "", valor: "", categoria: "", data: "" };
 
@@ -47,6 +48,9 @@ export function GerenciadorLancamentos({ tipo, api }: { tipo: "receita" | "despe
       });
     return () => controlador.abort();
   }, [api, filtro, revisao]);
+
+  // Recarga silenciosa quando os dados mudam (aqui ou na conta conjunta).
+  useEffect(() => ouvirAlteracoes(() => setRevisao(valor => valor + 1)), []);
 
   function recarregar() {
     setCarregando(true);

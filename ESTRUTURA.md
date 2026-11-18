@@ -38,6 +38,9 @@ controle_financeiro/
     │   ├── orcamento/
     │   │   ├── api/orcamentos.ts
     │   │   └── components/pagina-planejamento.tsx
+    │   ├── conjunta/
+    │   │   ├── api/conjunta.ts
+    │   │   └── components/pagina-conjunta.tsx
     │   ├── despesa/
     │   │   ├── api/despesas.ts
     │   │   └── components/pagina-despesas.tsx
@@ -56,6 +59,7 @@ controle_financeiro/
     │   │   ├── navegacao.tsx   # itens + badge de contas em aberto
     │   │   ├── pagina-feature.tsx
     │   │   ├── seletor-mes.tsx
+    │   │   ├── tempo-real.tsx  # ouve /eventos e mostra o aviso
     │   │   └── gerenciador-lancamentos.tsx
     │   └── lib/
     │       ├── http.ts
@@ -66,7 +70,8 @@ controle_financeiro/
     │       ├── orcamento.ts
     │       ├── orcamentos-api.ts
     │       ├── periodo.ts
-    │       └── saldo-api.ts
+    │       ├── saldo-api.ts
+    │       └── tempo-real.ts
     ├── tests/
     │   ├── http.test.mjs
     │   ├── sessao.test.mjs
@@ -116,6 +121,11 @@ os agrupamentos visuais do mês (categorias, semanas e recentes), em centavos.
   `shared/lib/orcamento.ts` define a faixa da barra (azul < 80%, laranja 80–95%, vermelho ≥ 95%)
   e valida o limite digitado.
 - periodo: mês atual, dia civil local, deslocamento de mês/dia e nomes em pt-BR.
+- conta conjunta: `features/conjunta` tem a página /conjunta (gerar convite, entrar com código,
+  sair/encerrar). `shared/components/tempo-real.tsx`, montado no cabeçalho autenticado, abre
+  GET /eventos (SSE) e dispara `meusaldo:dados-alterados`; cada página registra
+  `ouvirAlteracoes` de `shared/lib/tempo-real.ts` e recarrega em silêncio. O planejamento não
+  sobrescreve limites digitados e ainda não salvos.
 A camada de API contém URLs e fetch não aparece em componentes visuais.
 As decisões arquiteturais ficam somente nos [ADRs do README](README.md#decisões);
 este mapa descreve a estrutura atual. `.gitignore` protege ambientes locais também
@@ -129,4 +139,7 @@ Prisma acessa PostgreSQL. Migrations estão em prisma/migrations, seed é explí
 e os testes de API/migração usam banco separado com sufixo _test.
 auth/ contém validação, Argon2id, cookies/sessões e CSRF; rotas/auth.ts expõe
 cadastro/login/me/logout. Usuario e Sessao se relacionam aos lançamentos no Prisma.
-O middleware exige sessão e todas as consultas financeiras restringem usuarioId.
+O middleware exige sessão e todas as consultas financeiras restringem usuarioId ao dono
+efetivo da sessão (`req.donoId`: o titular da conta conjunta ou o próprio usuário).
+rotas/conjunta.ts cuida de convite, entrada e saída; tempo-real.ts mantém os streams de
+GET /eventos e avisa quem vê o mesmo dono após cada POST/PUT/DELETE bem-sucedido.
