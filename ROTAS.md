@@ -5,13 +5,14 @@
 | `/` | Redireciona temporariamente (307) para /saldo |
 | `/login` | Acesso público; e-mail, senha e retorno interno seguro |
 | `/registro` | Acesso público; nome, e-mail, senha e confirmação |
-| `/saldo` | Visão geral: saldo oficial, números do mês selecionado, evolução do saldo, gastos por categoria, fluxo semanal e lançamentos recentes |
+| `/saldo` | Visão geral: alerta de contas que vencem em 7 dias, card de contas a pagar, sobra prevista, saldo oficial, números do mês selecionado, evolução do saldo, gastos por categoria, fluxo semanal e lançamentos recentes |
 | `/receitas` | Listar, cadastrar, editar, excluir e filtrar receitas |
 | `/despesas` | Listar, cadastrar, editar, excluir e filtrar despesas |
+| `/contas` | Contas a pagar do mês: cadastrar, editar, excluir e marcar como paga (cria a despesa) |
 | URL inexistente | 404 com link para o resumo |
 
 Todas usam o layout compartilhado, menu ativo com aria-current, título próprio
-com sufixo MeuSaldo e idioma pt-BR. As três páginas financeiras exigem sessão;
+com sufixo MeuSaldo e idioma pt-BR. As quatro páginas financeiras exigem sessão;
 visitantes seguem para /login?retorno=..., sem montar o conteúdo privado.
 Conta autenticada em /login ou /registro segue para o destino financeiro seguro.
 
@@ -23,6 +24,9 @@ Conta autenticada em /login ou /registro segue para o destino financeiro seguro.
 | /receitas/:id e /despesas/:id | GET, PUT e DELETE |
 | /saldo | GET de totalReceitas, totalDespesas e saldo; ?mes=YYYY-MM opcional |
 | /saldo/mensal | GET por mês (receitas, despesas, saldo, saldoAcumulado); ?meses=1..24 e ?ate=YYYY-MM |
+| /contas | GET com ?status=aberta ou paga, ?mes=YYYY-MM e ?ate=YYYY-MM-DD opcionais; POST |
+| /contas/:id | GET, PUT e DELETE |
+| /contas/:id/pagar | POST; marca pagaEm e cria a despesa (200), já paga (409) |
 | /auth/registro | POST público; cria conta (201), campos inválidos (400), duplicado (409) |
 | /auth/login | POST público; cria sessão (200), credenciais incorretas (401), limite (429) |
 | /auth/me | GET autenticado; usuário público e expiração (200), inválida (401) |

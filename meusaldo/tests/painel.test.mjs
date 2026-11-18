@@ -5,16 +5,12 @@ import ts from 'typescript';
 
 const fonte = await readFile(new URL('../features/saldo/lib/painel.ts', import.meta.url), 'utf8');
 const { outputText } = ts.transpileModule(fonte, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } });
-const { montarPainel, deslocarMes, nomeMes, variacao } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+const { montarPainel, variacao } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 
 let id = 0;
 const item = (tipo, valor, data, categoria = 'Geral') => ({ id: ++id, tipo, valor, data: `${data}T00:00:00.000Z`, categoria, descricao: 'x', criadoEm: `${data}T10:00:00.000Z` });
 
-test('desloca meses atravessando o ano e nomeia em português', () => {
-  assert.equal(deslocarMes('2026-01', -1), '2025-12');
-  assert.equal(deslocarMes('2026-12', 1), '2027-01');
-  assert.equal(nomeMes('2026-03'), 'Março de 2026');
-  assert.equal(nomeMes('2026-03', true), 'Mar');
+test('variação percentual sem base quando o anterior é zero', () => {
   assert.equal(variacao(10, 0), null);
   assert.equal(variacao(150, 100), 50);
 });

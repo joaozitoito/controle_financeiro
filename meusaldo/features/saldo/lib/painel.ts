@@ -9,21 +9,8 @@ export type ItemPainel = {
   tipo: "receita" | "despesa";
 };
 
-const NOMES_MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
 /** Contas em centavos inteiros para não acumular erro de ponto flutuante. */
 const centavos = (valor: number) => Math.round(valor * 100);
-
-export function deslocarMes(mes: string, delta: number): string {
-  const dia = new Date(`${mes}-01T00:00:00.000Z`);
-  dia.setUTCMonth(dia.getUTCMonth() + delta);
-  return dia.toISOString().slice(0, 7);
-}
-
-export function nomeMes(mes: string, curto = false): string {
-  const nome = NOMES_MESES[Number(mes.slice(5, 7)) - 1];
-  return curto ? nome.slice(0, 3) : `${nome} de ${mes.slice(0, 4)}`;
-}
 
 export function variacao(atual: number, anterior: number): number | null {
   return anterior === 0 ? null : ((atual - anterior) / Math.abs(anterior)) * 100;

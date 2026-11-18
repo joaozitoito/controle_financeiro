@@ -6,16 +6,15 @@ import { Icone } from "@/shared/components/icone";
 import { ErroHttp } from "@/shared/lib/http";
 import { formatarData, formatarMoeda } from "@/shared/lib/financeiro";
 import { carregarResumo } from "../api/saldo";
-import { deslocarMes, nomeMes, variacao } from "../lib/painel";
+import { variacao } from "../lib/painel";
+import { deslocarMes, diasEntre, hojeLocal, mesAtual, nomeMes } from "@/shared/lib/periodo";
 import { categoriaVisual } from "@/shared/lib/categorias";
+import { situacaoConta, totaisContas } from "@/shared/lib/contas";
+import { SeletorMes } from "@/shared/components/seletor-mes";
+import { COR_TOM, DataQuadrada } from "@/shared/components/data-quadrada";
 import { GraficoLinha, GraficoRosca } from "./graficos";
 
 const PERIODOS = [12, 6, 3] as const;
-
-function mesAtual() {
-  const hoje = new Date();
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function Cartao({ titulo, subtitulo, acao, className = "", children }: { titulo: string; subtitulo?: string; acao?: ReactNode; className?: string; children: ReactNode }) {
   const id = useId();
@@ -76,6 +75,7 @@ export function PaginaSaldo() {
     setRevisao(valor => valor + 1);
   }
   const nomeAnterior = nomeMes(deslocarMes(mes, -1)).split(" ")[0].toLowerCase();
+  const hoje = hojeLocal();
 
   return (
     <div className="space-y-6">
@@ -85,11 +85,7 @@ export function PaginaSaldo() {
           <p className="mt-1 text-sm text-slate-500">{nomeMes(mes)} · dados da sua conta</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-sm">
-            <button type="button" className="grid size-11 place-items-center rounded-l-xl text-slate-600 hover:bg-slate-50" aria-label="Mês anterior" onClick={() => recarregar(deslocarMes(mes, -1))}><Icone nome="anterior" /></button>
-            <p aria-live="polite" className="min-w-24 text-center text-sm font-medium">{nomeMes(mes, true)} {mes.slice(0, 4)}</p>
-            <button type="button" className="grid size-11 place-items-center rounded-r-xl text-slate-600 hover:bg-slate-50" aria-label="Próximo mês" onClick={() => recarregar(deslocarMes(mes, 1))}><Icone nome="proximo" /></button>
-          </div>
+          <SeletorMes mes={mes} onMudar={recarregar} />
           <button type="button" className="botao-secundario rounded-xl" disabled={carregando} onClick={() => recarregar()}>Atualizar</button>
           <Link href="/receitas#formulario" className="botao-secundario gap-1.5 rounded-xl"><Icone nome="mais" />Receita</Link>
           <Link href="/despesas#formulario" className="botao-primario gap-1.5 rounded-xl"><Icone nome="mais" />Despesa</Link>
@@ -100,12 +96,35 @@ export function PaginaSaldo() {
       {erro && <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">{erro} Use “Atualizar” para tentar novamente.</p>}
 
       {!carregando && !erro && painel && <>
+        {painel.alertas.length > 0 && (() => {
+          const vencidas = painel.alertas.filter(conta => diasEntre(hoje, conta.vencimento) < 0).length;
+          const total = totaisContas(painel.alertas).aberto;
+          return <section aria-labelledby="titulo-alerta-contas" className="flex flex-col gap-4 rounded-2xl border border-red-200 bg-red-50/70 p-4 sm:p-5 xl:flex-row xl:items-center">
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-red-600"><Icone nome="alerta" className="size-5" /></span>
+              <div className="min-w-0">
+                <h2 id="titulo-alerta-contas" className="font-semibold text-red-800">
+                  {painel.alertas.length} {painel.alertas.length === 1 ? "conta vence" : "contas vencem"} nos próximos 7 dias
+                </h2>
+                <p className="text-sm text-red-700/80">{formatarMoeda(total)} a pagar{vencidas ? `, incluindo ${vencidas} já vencida${vencidas > 1 ? "s" : ""}` : ""}.</p>
+              </div>
+            </div>
+            <ul className="flex flex-wrap gap-2" aria-label="Próximos vencimentos">
+              {painel.alertas.slice(0, 3).map(conta => <li key={conta.id} className="rounded-xl border border-red-100 bg-white px-3 py-1.5 text-xs">
+                <span className="block font-semibold uppercase text-red-600">{formatarData(conta.vencimento).slice(0, 5)}</span>
+                <span className="font-medium">{conta.descricao}</span> <span className="tabular-nums text-red-600">{formatarMoeda(conta.valor)}</span>
+              </li>)}
+            </ul>
+            <Link href="/contas" className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-4 text-sm font-semibold text-white hover:bg-red-600">Revisar contas<Icone nome="proximo" /></Link>
+          </section>;
+        })()}
+
         <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {([
             ["Saldo em conta", formatarMoeda(painel.totais.saldo), "carteira", "#2563eb", "bg-blue-50 text-blue-600", painel.historico.map(item => item.saldoAcumulado), <p key="s" className="text-xs text-slate-500">saldo oficial, todos os lançamentos</p>],
             ["Receitas do mês", formatarMoeda(painel.receitas), "alta", "#10b981", "bg-emerald-50 text-emerald-600", painel.historico.map(item => item.receitas), <Variacao key="r" valor={variacao(painel.receitas, painel.anterior.receitas)} sufixo={`vs. ${nomeAnterior}`} />],
             ["Despesas do mês", formatarMoeda(painel.despesas), "baixa", "#ef4444", "bg-red-50 text-red-600", painel.historico.map(item => item.despesas), <Variacao key="d" inverter valor={variacao(painel.despesas, painel.anterior.despesas)} sufixo={`vs. ${nomeAnterior}`} />],
-            ["Sobra do mês", formatarMoeda(painel.sobra), "alvo", "#8b5cf6", "bg-violet-50 text-violet-600", painel.historico.map(item => item.saldo), <p key="o" className="text-xs text-slate-500">{painel.receitas > 0 ? `${Math.round((painel.sobra / painel.receitas) * 100)}% das receitas` : "sem receitas no mês"}</p>],
+            ["Sobra prevista", formatarMoeda(painel.sobraPrevista), "alvo", "#8b5cf6", "bg-violet-50 text-violet-600", painel.historico.map(item => item.saldo), <p key="o" className="text-xs text-slate-500">{painel.receitas > 0 ? `${Math.round((painel.sobraPrevista / painel.receitas) * 100)}% das receitas, após contas em aberto` : "sem receitas no mês"}</p>],
           ] as const).map(([rotulo, valor, icone, cor, estilo, serie, rodape]) => (
             <div key={rotulo} className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <dt className="flex items-center justify-between text-sm text-slate-600">
@@ -146,6 +165,41 @@ export function PaginaSaldo() {
             })()}
           </Cartao>
 
+          <Cartao
+            titulo="Contas a pagar"
+            subtitulo={`${painel.contas.filter(conta => !conta.pagaEm).length} em aberto · ${nomeMes(mes).toLowerCase()}`}
+            acao={<Link href="/contas" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">Ver todas<Icone nome="proximo" /></Link>}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-3xl font-bold tabular-nums tracking-tight">{formatarMoeda(painel.totaisDeContas.aberto)}</p>
+              <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-red-600">PENDENTES</span>
+            </div>
+            {painel.contas.some(conta => !conta.pagaEm)
+              ? <ul className="mt-3 divide-y divide-slate-100">
+                {painel.contas.filter(conta => !conta.pagaEm).slice(0, 4).map(conta => {
+                  const { texto, tom } = situacaoConta(conta, hoje);
+                  return <li key={conta.id} className="flex items-center gap-3 py-2.5">
+                    <DataQuadrada data={conta.vencimento} tom={tom} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{conta.descricao}</p>
+                      <p className={`text-sm ${COR_TOM[tom]}`}>{texto}</p>
+                    </div>
+                    <p className="shrink-0 font-semibold tabular-nums">{formatarMoeda(conta.valor)}</p>
+                  </li>;
+                })}
+              </ul>
+              : <p className="mt-3 rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-600">Nenhuma conta em aberto neste mês.</p>}
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-red-100" role="progressbar" aria-label="Contas pagas no mês" aria-valuenow={painel.totaisDeContas.percentualPago} aria-valuemin={0} aria-valuemax={100}>
+              <div className="h-full rounded-full bg-blue-600" style={{ width: `${painel.totaisDeContas.percentualPago}%` }} />
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-slate-500">
+              <span>Pago <strong className="tabular-nums text-slate-700">{formatarMoeda(painel.totaisDeContas.pago)}</strong></span>
+              <span>Em aberto <strong className="tabular-nums text-slate-700">{formatarMoeda(painel.totaisDeContas.aberto)}</strong></span>
+            </div>
+          </Cartao>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
           <Cartao titulo="Gastos por categoria" subtitulo={`${nomeMes(mes)} · ${painel.categorias.length} categoria(s)`}>
             {painel.categorias.length === 0
               ? <p className="rounded-xl border border-dashed border-slate-300 p-5 text-sm text-slate-600">Nenhuma despesa neste mês.</p>
@@ -165,13 +219,12 @@ export function PaginaSaldo() {
                 </ul>
               </>}
           </Cartao>
-        </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+          {/* order-last: no desktop, Fluxo fica ao lado de Gastos e os lançamentos ocupam a linha de baixo (Fluxo não tem foco). */}
           <Cartao
             titulo="Lançamentos recentes"
             subtitulo={`Movimentos de ${nomeMes(mes).toLowerCase()}`}
-            className="lg:col-span-2"
+            className="lg:order-last lg:col-span-2"
             acao={<div role="group" aria-label="Filtrar lançamentos" className="flex gap-1">
               {([["todos", "Todos"], ["receita", "Entradas"], ["despesa", "Saídas"]] as const).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)} className={`min-h-11 rounded-lg px-3 text-xs font-medium ${filtro === valor ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-100"}`}>{rotulo}</button>)}
             </div>}
@@ -217,7 +270,7 @@ export function PaginaSaldo() {
                 </ul>
                 <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
                   <span className="text-slate-500">Sobra do mês</span>
-                  <span className={`font-bold tabular-nums ${painel.sobra >= 0 ? "text-emerald-700" : "text-red-700"}`}>{painel.sobra >= 0 ? "+ " : ""}{formatarMoeda(painel.sobra)}</span>
+                  <span className={`font-bold tabular-nums ${painel.saldoDoMes >= 0 ? "text-emerald-700" : "text-red-700"}`}>{painel.saldoDoMes >= 0 ? "+ " : ""}{formatarMoeda(painel.saldoDoMes)}</span>
                 </div>
               </>;
             })()}

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/http.test.mjs tests/financeiro.test.mjs tests/sessao.test.mjs tests/painel.test.mjs",
+    "test": "node --test tests/http.test.mjs tests/financeiro.test.mjs tests/sessao.test.mjs tests/painel.test.mjs tests/contas.test.mjs",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {

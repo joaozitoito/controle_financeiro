@@ -20,6 +20,7 @@ controle_financeiro/
     │   ├── not-found.tsx
     │   ├── receitas/page.tsx
     │   ├── despesas/page.tsx
+    │   ├── contas/page.tsx
     │   ├── login/page.tsx
     │   ├── registro/page.tsx
     │   └── saldo/page.tsx
@@ -27,6 +28,9 @@ controle_financeiro/
     │   ├── receita/
     │   │   ├── api/receitas.ts
     │   │   └── components/pagina-receitas.tsx
+    │   ├── conta/
+    │   │   ├── api/contas.ts
+    │   │   └── components/pagina-contas.tsx
     │   ├── despesa/
     │   │   ├── api/despesas.ts
     │   │   └── components/pagina-despesas.tsx
@@ -40,19 +44,26 @@ controle_financeiro/
     │       └── components/     # pagina-saldo.tsx e graficos.tsx (SVG sem biblioteca)
     ├── shared/
     │   ├── components/
+    │   │   ├── data-quadrada.tsx
     │   │   ├── icone.tsx
-    │   │   ├── navegacao.tsx
+    │   │   ├── navegacao.tsx   # itens + badge de contas em aberto
     │   │   ├── pagina-feature.tsx
+    │   │   ├── seletor-mes.tsx
     │   │   └── gerenciador-lancamentos.tsx
     │   └── lib/
     │       ├── http.ts
     │       ├── categorias.ts
+    │       ├── contas.ts
+    │       ├── contas-api.ts
     │       ├── financeiro.ts
+    │       ├── periodo.ts
     │       └── saldo-api.ts
     ├── tests/
     │   ├── http.test.mjs
     │   ├── sessao.test.mjs
-    │   └── financeiro.test.mjs
+    │   ├── financeiro.test.mjs
+    │   ├── painel.test.mjs
+    │   └── contas.test.mjs
     ├── public/
     ├── .env.example
     ├── AGENTS.md
@@ -81,6 +92,13 @@ para o saldo em conta oficial e GET /saldo/mensal para receitas, despesas, sobra
 acumulado de cada mês (totais calculados no backend). As listagens com `?mes=` alimentam só
 os agrupamentos visuais do mês (categorias, semanas e recentes), em centavos.
 - categorias: lista fixa do formulário com cor e ícone; texto livre antigo aparece como "Outros".
+- contas a pagar: `features/conta` tem a página /contas (cadastro, edição, exclusão e
+  "Marcar como paga", que cria a despesa no backend). `shared/lib/contas-api.ts` lista
+  contas para a página, para o badge da navegação e para o banner/card da Visão geral;
+  `shared/lib/contas.ts` calcula prazo, cor, pago × aberto e sobra prevista
+  (receitas − despesas − contas em aberto do mês), em centavos. Após cada mutação a página
+  dispara `meusaldo:contas-alteradas` para o badge se atualizar.
+- periodo: mês atual, dia civil local, deslocamento de mês/dia e nomes em pt-BR.
 A camada de API contém URLs e fetch não aparece em componentes visuais.
 As decisões arquiteturais ficam somente nos [ADRs do README](README.md#decisões);
 este mapa descreve a estrutura atual. `.gitignore` protege ambientes locais também
