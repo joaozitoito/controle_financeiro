@@ -33,6 +33,7 @@ Conta autenticada em /login ou /registro segue para o destino financeiro seguro.
 | /auth/login | POST público; cria sessão (200), credenciais incorretas (401), limite (429) |
 | /auth/me | GET autenticado; usuário público e expiração (200), inválida (401) |
 | /auth/logout | POST autenticado; revoga token e remove cookie (204) |
+| /health | GET público; `{ "ok": true }` (200), usado pelo healthcheck do Compose |
 
 As páginas Next.js não substituem esses endpoints. Métodos, payloads e status
 estão no README do backend. A comunicação usa NEXT_PUBLIC_API_URL.

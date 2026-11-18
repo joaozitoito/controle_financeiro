@@ -8,7 +8,8 @@ O objetivo é registrar receitas e despesas e acompanhar o saldo.
 
 A Fase 3 adiciona cadastro, login, sessão por cookie HttpOnly e dados isolados por
 usuário. O CRUD, filtros, resumo e lançamentos recentes da Fase 2 foram preservados.
-Compose/Dockerfiles continuam fora desta fase. Uso local, sem publicação.
+A Fase 4 adiciona Dockerfiles e Compose para desenvolvimento e produção local.
+Uso local, sem publicação.
 
 ## Executar
 
@@ -43,6 +44,48 @@ Abra `http://localhost:3000`. Para consultar ou gravar dados, mantenha também a
 na porta 3001 e o PostgreSQL ligados. Crie a própria conta em `/registro` e entre
 em `/login`; não existe conta ou senha padrão. Veja os comandos de verificação no
 [README do app](./meusaldo/README.md#testes-e-build).
+
+## Rodando com Docker
+
+Requer Docker Desktop (WSL 2 no Windows) e os dois repositórios clonados como irmãos,
+como acima. Não precisa de Node nem PostgreSQL instalados. Na pasta `controle_financeiro`:
+
+```powershell
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+# Troque o marcador de POSTGRES_PASSWORD por uma senha só com letras e números.
+docker compose up --build --watch
+```
+
+Abra `http://localhost:3000` e crie a conta em `/registro`. O compose sobe PostgreSQL 16,
+API (3001) e frontend (3000) e aplica as migrações ao iniciar a API. Com `--watch`,
+salvar arquivos em `meusaldo/app`, `features`, `shared`, `public` ou em
+`backend_meusaldo/src` atualiza o container; mudar `package.json` ou `prisma/`
+reconstrói a imagem. Os dados ficam no volume `meusaldo_dados` e sobrevivem ao
+`docker compose down`. `docker compose down -v` apaga esse volume e os dados.
+
+Produção local (imagens `prod`, sem código-fonte montado, usuário sem root):
+
+```powershell
+docker compose -f compose.prod.yaml up --build
+```
+
+Site em `http://localhost:8080`, API em `http://localhost:3001` (`GET /health`).
+Um serviço `migrate` aplica as migrações e termina antes da API subir. O banco de
+produção local usa outro volume (`meusaldo-prod_dados`). Dev e produção usam a
+porta 3001 e não rodam ao mesmo tempo, nem junto com `npm run dev`.
+
+| Arquivo | Papel |
+| --- | --- |
+| `compose.yaml` | Desenvolvimento: db, api (target dev) e web (target dev) |
+| `compose.prod.yaml` | Produção local: db, migrate, api e web (target prod) |
+| `.env` (fora do Git) | `POSTGRES_PASSWORD`, lida só pelo Compose |
+| `meusaldo/Dockerfile` | dev (`next dev`), build e prod (`output: "standalone"`) |
+| `../backend_meusaldo/Dockerfile` | dev (`tsx watch`), build (`tsc`) e prod (`node dist/server.js`) |
+
+`NEXT_PUBLIC_API_URL` é gravada no bundle de produção como argumento de build;
+ao mudar, rode de novo com `--build`. Em produção a API usa o cookie
+`__Host-meusaldo_sessao` com `Secure`, aceito pelo navegador em `localhost`.
+Para erros, comece por `docker compose logs -f api` (ou `web`, `db`).
 
 ## Documentação
 

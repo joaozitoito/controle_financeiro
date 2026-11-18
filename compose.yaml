@@ -1,0 +1,48 @@
+# Desenvolvimento: docker compose up --build --watch
+# Requer backend_meusaldo clonado ao lado desta pasta e POSTGRES_PASSWORD em ./.env.
+name: meusaldo
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: meusaldo
+      POSTGRES_DB: meusaldo_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes: ["dados:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "meusaldo", "-d", "meusaldo_dev"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: { context: ../backend_meusaldo, target: dev }
+    ports: ["3001:3001"]
+    environment:
+      DATABASE_URL: postgresql://meusaldo:${POSTGRES_PASSWORD}@db:5432/meusaldo_dev?schema=public
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      db: { condition: service_healthy }
+    # Volume montado não avisa o container no Windows; o watch copia o que você salvou.
+    develop:
+      watch:
+        - { action: sync, path: ../backend_meusaldo/src, target: /app/src }
+        - { action: rebuild, path: ../backend_meusaldo/package.json }
+        - { action: rebuild, path: ../backend_meusaldo/prisma }
+
+  web:
+    build: { context: ./meusaldo, target: dev }
+    ports: ["3000:3000"]
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on: [api]
+    develop:
+      watch:
+        - { action: sync, path: ./meusaldo/app, target: /app/app }
+        - { action: sync, path: ./meusaldo/features, target: /app/features }
+        - { action: sync, path: ./meusaldo/shared, target: /app/shared }
+        - { action: sync, path: ./meusaldo/public, target: /app/public }
+        - { action: rebuild, path: ./meusaldo/package.json }
+
+volumes:
+  dados:
