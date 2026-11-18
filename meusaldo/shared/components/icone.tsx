@@ -7,6 +7,8 @@ const caminhos = {
   anterior: "M15 18l-6-6 6-6",
   proximo: "M9 18l6-6-6-6",
   mais: "M12 5v14M5 12h14",
+  calendario: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  alerta: "M12 3l10 18H2zM12 10v4M12 17h.01",
   sair: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
   entrada: "M17 7L7 17M7 7v10h10",
   saida: "M7 17L17 7M7 7h10v10",

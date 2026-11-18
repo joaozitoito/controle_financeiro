@@ -2,16 +2,43 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { EVENTO_CONTAS_ALTERADAS, listarContas } from "@/shared/lib/contas-api";
+import { mesAtual } from "@/shared/lib/periodo";
 import { Icone } from "./icone";
 
 const itens = [
   { href: "/saldo", titulo: "Visão geral", icone: "painel" },
   { href: "/receitas", titulo: "Receitas", icone: "alta" },
   { href: "/despesas", titulo: "Despesas", icone: "baixa" },
+  { href: "/contas", titulo: "Contas a pagar", icone: "calendario" },
 ] as const;
+
+/** Quantidade de contas em aberto que vencem no mês atual; atualiza ao navegar e após mutações. */
+function useContasAbertas() {
+  const caminho = usePathname();
+  const [quantidade, setQuantidade] = useState(0);
+  const [revisao, setRevisao] = useState(0);
+
+  useEffect(() => {
+    const atualizar = () => setRevisao(valor => valor + 1);
+    window.addEventListener(EVENTO_CONTAS_ALTERADAS, atualizar);
+    return () => window.removeEventListener(EVENTO_CONTAS_ALTERADAS, atualizar);
+  }, []);
+
+  useEffect(() => {
+    const controlador = new AbortController();
+    // Badge é complementar: em falha mantém o último valor em vez de mostrar erro.
+    listarContas({ status: "aberta", mes: mesAtual() }, controlador.signal).then(lista => setQuantidade(lista.length)).catch(() => {});
+    return () => controlador.abort();
+  }, [caminho, revisao]);
+
+  return quantidade;
+}
 
 export function Navegacao() {
   const caminho = usePathname();
+  const abertas = useContasAbertas();
 
   return (
     <nav aria-label="Navegação principal">
@@ -33,6 +60,9 @@ export function Navegacao() {
               >
                 <Icone nome={icone} />
                 {titulo}
+                {href === "/contas" && abertas > 0 && <span className="ml-auto rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-700">
+                  {abertas}<span className="sr-only"> em aberto neste mês</span>
+                </span>}
               </Link>
             </li>
           );
