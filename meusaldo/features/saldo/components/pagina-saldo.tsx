@@ -10,6 +10,7 @@ import { variacao } from "../lib/painel";
 import { deslocarMes, diasEntre, hojeLocal, mesAtual, nomeMes } from "@/shared/lib/periodo";
 import { categoriaVisual } from "@/shared/lib/categorias";
 import { situacaoConta, totaisContas } from "@/shared/lib/contas";
+import { COR_FAIXA, faixaOrcamento } from "@/shared/lib/orcamento";
 import { SeletorMes } from "@/shared/components/seletor-mes";
 import { COR_TOM, DataQuadrada } from "@/shared/components/data-quadrada";
 import { GraficoLinha, GraficoRosca } from "./graficos";
@@ -220,11 +221,45 @@ export function PaginaSaldo() {
               </>}
           </Cartao>
 
-          {/* order-last: no desktop, Fluxo fica ao lado de Gastos e os lançamentos ocupam a linha de baixo (Fluxo não tem foco). */}
+          <Cartao
+            titulo="Orçamento por categoria"
+            subtitulo={painel.orcamento.limite > 0 ? `${formatarMoeda(painel.orcamento.gasto)} de ${formatarMoeda(painel.orcamento.limite)} planejados` : nomeMes(mes)}
+            acao={<Link href="/planejamento" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">{painel.orcamento.limite > 0 ? "Ajustar" : "Definir limites"}<Icone nome="proximo" /></Link>}
+          >
+            {painel.orcamento.limite > 0 ? (() => {
+              const geral = faixaOrcamento(painel.orcamento.gasto, painel.orcamento.limite);
+              const sobra = painel.orcamento.limite - painel.orcamento.gasto;
+              return <>
+                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700">{geral.percentual}% usado</span>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label="Uso do orçamento do mês" aria-valuenow={Math.min(geral.percentual, 100)} aria-valuemin={0} aria-valuemax={100}>
+                  <div className={`h-full rounded-full ${COR_FAIXA[geral.faixa]}`} style={{ width: `${Math.min(geral.percentual, 100)}%` }} />
+                </div>
+                <ul className="mt-4 space-y-3 text-sm">
+                  {painel.orcamento.categorias.slice(0, 5).map(item => {
+                    const faixa = faixaOrcamento(item.gasto, item.limite);
+                    return <li key={item.categoria}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="min-w-0 truncate text-slate-700">{item.categoria}{faixa.rotulo && <span className={`ml-2 rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wider ${faixa.faixa === "vermelho" ? "bg-red-50 text-red-700" : "bg-orange-50 text-orange-700"}`}>{faixa.rotulo}</span>}</span>
+                        <span className="tabular-nums text-slate-500"><strong className="text-slate-800">{formatarMoeda(item.gasto)}</strong> / {formatarMoeda(item.limite)}</span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                        <div className={`h-full rounded-full ${COR_FAIXA[faixa.faixa]}`} style={{ width: `${Math.min(faixa.percentual, 100)}%` }} />
+                      </div>
+                    </li>;
+                  })}
+                </ul>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-500">
+                  {sobra >= 0 ? `Sobram ${formatarMoeda(sobra)} de limite em ${nomeMes(mes).toLowerCase()}.` : `${formatarMoeda(-sobra)} acima do planejado em ${nomeMes(mes).toLowerCase()}.`}
+                </p>
+              </>;
+            })() : <p className="rounded-xl border border-dashed border-slate-300 p-5 text-sm text-slate-600">Nenhum limite definido para este mês. Use “Definir limites” para planejar os gastos por categoria.</p>}
+          </Cartao>
+
+          {/* order-last: no desktop, Fluxo fica antes dos lançamentos na segunda linha (Fluxo não tem foco). */}
           <Cartao
             titulo="Lançamentos recentes"
             subtitulo={`Movimentos de ${nomeMes(mes).toLowerCase()}`}
-            className="lg:order-last lg:col-span-2"
+            className="lg:order-last"
             acao={<div role="group" aria-label="Filtrar lançamentos" className="flex gap-1">
               {([["todos", "Todos"], ["receita", "Entradas"], ["despesa", "Saídas"]] as const).map(([valor, rotulo]) => <button key={valor} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)} className={`min-h-11 rounded-lg px-3 text-xs font-medium ${filtro === valor ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-100"}`}>{rotulo}</button>)}
             </div>}
