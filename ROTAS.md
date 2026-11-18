@@ -5,7 +5,7 @@
 | `/` | Redireciona temporariamente (307) para /saldo |
 | `/login` | Acesso público; e-mail, senha e retorno interno seguro |
 | `/registro` | Acesso público; nome, e-mail, senha e confirmação |
-| `/saldo` | Totais gerais oficiais, lançamentos recentes e acesso aos cadastros |
+| `/saldo` | Visão geral: saldo oficial, números do mês selecionado, evolução do saldo, gastos por categoria, fluxo semanal e lançamentos recentes |
 | `/receitas` | Listar, cadastrar, editar, excluir e filtrar receitas |
 | `/despesas` | Listar, cadastrar, editar, excluir e filtrar despesas |
 | URL inexistente | 404 com link para o resumo |
@@ -19,9 +19,10 @@ Conta autenticada em /login ou /registro segue para o destino financeiro seguro.
 
 | Rotas | Métodos |
 | --- | --- |
-| /receitas e /despesas | GET com ?categoria= opcional; POST |
+| /receitas e /despesas | GET com ?categoria= e ?mes=YYYY-MM opcionais; POST |
 | /receitas/:id e /despesas/:id | GET, PUT e DELETE |
-| /saldo | GET de totalReceitas, totalDespesas e saldo |
+| /saldo | GET de totalReceitas, totalDespesas e saldo; ?mes=YYYY-MM opcional |
+| /saldo/mensal | GET por mês (receitas, despesas, saldo, saldoAcumulado); ?meses=1..24 e ?ate=YYYY-MM |
 | /auth/registro | POST público; cria conta (201), campos inválidos (400), duplicado (409) |
 | /auth/login | POST público; cria sessão (200), credenciais incorretas (401), limite (429) |
 | /auth/me | GET autenticado; usuário público e expiração (200), inválida (401) |

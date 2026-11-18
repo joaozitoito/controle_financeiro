@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ErroHttp } from "@/shared/lib/http";
 import { consultarSaldo } from "@/shared/lib/saldo-api";
+import { CATEGORIAS } from "@/shared/lib/categorias";
 import { formatarData, formatarMoeda, validarFormulario, type ApiLancamentos, type FormularioLancamento, type Lancamento, type Totais } from "@/shared/lib/financeiro";
 
 const vazio: FormularioLancamento = { descricao: "", valor: "", categoria: "", data: "" };
@@ -144,11 +145,24 @@ export function GerenciadorLancamentos({ tipo, api }: { tipo: "receita" | "despe
             ] as const).map(([nome, label, inputType]) => (
               <div key={nome} className="min-w-0 space-y-1.5">
                 <label htmlFor={`${tipo}-${nome}`} className="block text-sm font-medium">{label} <span className="text-slate-500">(obrigatório)</span></label>
-                <input
+                {nome === "categoria" ? <select
+                  id={`${tipo}-${nome}`} name={nome} required className="campo" value={formulario.categoria}
+                  aria-invalid={Boolean(campos[nome])}
+                  aria-describedby={campos[nome] ? `${tipo}-${nome}-erro` : undefined}
+                  onChange={evento => {
+                    setFormulario(anterior => ({ ...anterior, categoria: evento.target.value }));
+                    setCampos(anterior => ({ ...anterior, categoria: "" }));
+                  }}
+                >
+                  <option value="">Selecione</option>
+                  {CATEGORIAS.map(categoria => <option key={categoria.nome}>{categoria.nome}</option>)}
+                  {/* Mantém editável um registro antigo com categoria fora da lista. */}
+                  {formulario.categoria && !CATEGORIAS.some(categoria => categoria.nome === formulario.categoria) && <option>{formulario.categoria}</option>}
+                </select> : <input
                   id={`${tipo}-${nome}`} name={nome} type={inputType} required
                   className="campo" value={formulario[nome]}
                   inputMode={nome === "valor" ? "decimal" : undefined}
-                  maxLength={nome === "descricao" ? 100 : nome === "categoria" ? 60 : undefined}
+                  maxLength={nome === "descricao" ? 100 : undefined}
                   min={nome === "data" ? "0001-01-01" : undefined} max={nome === "data" ? "9999-12-31" : undefined}
                   aria-invalid={Boolean(campos[nome])}
                   aria-describedby={[nome === "valor" ? "ajuda-valor" : "", campos[nome] ? `${tipo}-${nome}-erro` : ""].filter(Boolean).join(" ") || undefined}
@@ -156,7 +170,7 @@ export function GerenciadorLancamentos({ tipo, api }: { tipo: "receita" | "despe
                     setFormulario(anterior => ({ ...anterior, [nome]: evento.target.value }));
                     setCampos(anterior => ({ ...anterior, [nome]: "" }));
                   }}
-                />
+                />}
                 {nome === "valor" && <p id="ajuda-valor" className="text-xs leading-5 text-slate-600">Ex.: 1250,90. Até duas casas decimais, sem ponto de milhar.</p>}
                 {campos[nome] && <p id={`${tipo}-${nome}-erro`} role="alert" className="text-sm text-red-800">{campos[nome]}</p>}
               </div>
