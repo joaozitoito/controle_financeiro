@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { EVENTO_CONTAS_ALTERADAS, listarContas } from "@/shared/lib/contas-api";
 import { mesAtual } from "@/shared/lib/periodo";
+import { ouvirAlteracoes } from "@/shared/lib/tempo-real";
 import { Icone } from "./icone";
 
 const itens = [
@@ -13,6 +14,7 @@ const itens = [
   { href: "/despesas", titulo: "Despesas", icone: "baixa" },
   { href: "/contas", titulo: "Contas a pagar", icone: "calendario" },
   { href: "/planejamento", titulo: "Planejamento", icone: "alvo" },
+  { href: "/conjunta", titulo: "Conta conjunta", icone: "coracao" },
 ] as const;
 
 /** Quantidade de contas em aberto que vencem no mês atual; atualiza ao navegar e após mutações. */
@@ -24,7 +26,11 @@ function useContasAbertas() {
   useEffect(() => {
     const atualizar = () => setRevisao(valor => valor + 1);
     window.addEventListener(EVENTO_CONTAS_ALTERADAS, atualizar);
-    return () => window.removeEventListener(EVENTO_CONTAS_ALTERADAS, atualizar);
+    const pararTempoReal = ouvirAlteracoes(atualizar);
+    return () => {
+      window.removeEventListener(EVENTO_CONTAS_ALTERADAS, atualizar);
+      pararTempoReal();
+    };
   }, []);
 
   useEffect(() => {

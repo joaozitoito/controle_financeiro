@@ -196,3 +196,23 @@ estado financeiro, e a verificação inicial não monta conteúdo privado.
 requisições diretas. Confiar em usuarioId do cliente permite forjar propriedade.
 Atribuir registros antigos ao primeiro cadastro não comprova quem é o dono e pode
 expor dados privados.
+
+### Decisão 7 - Conta conjunta por titular e tempo real com SSE
+
+**Data:** 18/11/2026
+**Contexto:** Duas pessoas precisam registrar e acompanhar as mesmas finanças, vendo na
+hora o que a outra altera, sem enfraquecer a autorização por dono da Decisão 6.
+**Decisão:** Um usuário pode ter um titular (`Usuario.titularId`). A sessão calcula o dono
+efetivo (`titularId ?? id`) e todas as rotas financeiras usam esse dono em vez do ID do
+cliente. O vínculo nasce de um código de convite de uso único, válido por 24h, guardado só
+como hash; a entrada roda em transação Serializable e limita a duas pessoas. As alterações
+bem-sucedidas são enviadas por Server-Sent Events (`GET /eventos`) a quem vê o mesmo dono;
+o frontend recarrega as telas em silêncio e avisa quem alterou.
+**Consequências:** Nenhuma tabela financeira mudou e os dados existentes continuam válidos.
+Enquanto vinculado, o membro não vê os próprios dados (voltam ao sair) e o que cria fica
+com o titular. Os assinantes ficam em memória: com mais de uma instância da API seria
+preciso um barramento comum (por exemplo LISTEN/NOTIFY do PostgreSQL).
+**Alternativa Descartada:** Carteiras separadas (pessoal + conjunta com seletor) trocariam
+`usuarioId` por `carteiraId` em todas as tabelas e rotas. WebSocket exigiria biblioteca e
+protocolo próprio para um fluxo que só vai do servidor ao navegador. Polling periódico
+atrasaria o aviso e geraria tráfego constante.

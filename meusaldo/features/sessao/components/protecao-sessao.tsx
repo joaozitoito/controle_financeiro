@@ -8,7 +8,7 @@ export function ProtecaoSessao({ children }: { children: ReactNode }) {
   const { status, usuario, erro, verificar } = useSessao();
   const caminho = usePathname();
   const router = useRouter();
-  const privada = ["/saldo", "/receitas", "/despesas", "/contas", "/planejamento"].includes(caminho);
+  const privada = ["/saldo", "/receitas", "/despesas", "/contas", "/planejamento", "/conjunta"].includes(caminho);
 
   useEffect(() => {
     if (privada && status === "anonimo") router.replace(`/login?retorno=${encodeURIComponent(caminho + window.location.search)}`);
