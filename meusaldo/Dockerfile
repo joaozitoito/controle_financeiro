@@ -1,4 +1,4 @@
-FROM node:24-slim AS base
+FROM node:24.22.3-slim AS base
 WORKDIR /app
 COPY package*.json ./
 
@@ -18,7 +18,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
 # prod: servidor standalone do Next, sem código-fonte nem devDependencies, sem root.
-FROM node:24-slim AS prod
+FROM node:24.22.3-slim AS prod
 WORKDIR /app
 ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=build --chown=node:node /app/.next/standalone ./
