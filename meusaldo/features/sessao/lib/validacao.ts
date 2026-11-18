@@ -16,5 +16,5 @@ export function validarFormularioSessao(modo: "login" | "registro", formulario: 
 export function destinoSeguro(destino: string | null): string {
   if (!destino) return "/saldo";
   const rota = destino.split(/[?#]/)[0];
-  return ["/saldo", "/receitas", "/despesas", "/contas"].includes(rota) ? destino : "/saldo";
+  return ["/saldo", "/receitas", "/despesas", "/contas", "/planejamento"].includes(rota) ? destino : "/saldo";
 }

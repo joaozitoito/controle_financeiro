@@ -21,6 +21,7 @@ controle_financeiro/
     │   ├── receitas/page.tsx
     │   ├── despesas/page.tsx
     │   ├── contas/page.tsx
+    │   ├── planejamento/page.tsx
     │   ├── login/page.tsx
     │   ├── registro/page.tsx
     │   └── saldo/page.tsx
@@ -31,6 +32,9 @@ controle_financeiro/
     │   ├── conta/
     │   │   ├── api/contas.ts
     │   │   └── components/pagina-contas.tsx
+    │   ├── orcamento/
+    │   │   ├── api/orcamentos.ts
+    │   │   └── components/pagina-planejamento.tsx
     │   ├── despesa/
     │   │   ├── api/despesas.ts
     │   │   └── components/pagina-despesas.tsx
@@ -56,6 +60,8 @@ controle_financeiro/
     │       ├── contas.ts
     │       ├── contas-api.ts
     │       ├── financeiro.ts
+    │       ├── orcamento.ts
+    │       ├── orcamentos-api.ts
     │       ├── periodo.ts
     │       └── saldo-api.ts
     ├── tests/
@@ -63,7 +69,8 @@ controle_financeiro/
     │   ├── sessao.test.mjs
     │   ├── financeiro.test.mjs
     │   ├── painel.test.mjs
-    │   └── contas.test.mjs
+    │   ├── contas.test.mjs
+    │   └── orcamento.test.mjs
     ├── public/
     ├── .env.example
     ├── AGENTS.md
@@ -98,6 +105,11 @@ os agrupamentos visuais do mês (categorias, semanas e recentes), em centavos.
   `shared/lib/contas.ts` calcula prazo, cor, pago × aberto e sobra prevista
   (receitas − despesas − contas em aberto do mês), em centavos. Após cada mutação a página
   dispara `meusaldo:contas-alteradas` para o badge se atualizar.
+- orçamento: `features/orcamento` tem a página /planejamento (um limite por categoria; salvar
+  substitui os limites do mês). `shared/lib/orcamentos-api.ts` consulta GET /orcamentos para a
+  página e para o card da Visão geral; o gasto por categoria vem somado do backend.
+  `shared/lib/orcamento.ts` define a faixa da barra (azul < 80%, laranja 80–95%, vermelho ≥ 95%)
+  e valida o limite digitado.
 - periodo: mês atual, dia civil local, deslocamento de mês/dia e nomes em pt-BR.
 A camada de API contém URLs e fetch não aparece em componentes visuais.
 As decisões arquiteturais ficam somente nos [ADRs do README](README.md#decisões);

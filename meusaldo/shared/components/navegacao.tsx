@@ -12,6 +12,7 @@ const itens = [
   { href: "/receitas", titulo: "Receitas", icone: "alta" },
   { href: "/despesas", titulo: "Despesas", icone: "baixa" },
   { href: "/contas", titulo: "Contas a pagar", icone: "calendario" },
+  { href: "/planejamento", titulo: "Planejamento", icone: "alvo" },
 ] as const;
 
 /** Quantidade de contas em aberto que vencem no mês atual; atualiza ao navegar e após mutações. */
