@@ -36,14 +36,17 @@ controle_financeiro/
     │   │   └── components/ # provider, proteção, cabeçalho e formulário
     │   └── saldo/
     │       ├── api/saldo.ts
-    │       └── components/pagina-saldo.tsx
+    │       ├── lib/painel.ts   # agregações do painel em centavos
+    │       └── components/     # pagina-saldo.tsx e graficos.tsx (SVG sem biblioteca)
     ├── shared/
     │   ├── components/
+    │   │   ├── icone.tsx
     │   │   ├── navegacao.tsx
     │   │   ├── pagina-feature.tsx
     │   │   └── gerenciador-lancamentos.tsx
     │   └── lib/
     │       ├── http.ts
+    │       ├── categorias.ts
     │       ├── financeiro.ts
     │       └── saldo-api.ts
     ├── tests/
@@ -73,8 +76,11 @@ controle_financeiro/
 - tests: transporte e regras de formulário; fixtures só em testes.
 
 As listas/formulários usam estado local; só a sessão tem Context global. Não há cache de dados financeiros
-no navegador, React Router ou biblioteca de componentes. O resumo usa GET /saldo
-para os totais; as listagens apenas fornecem os registros recentes.
+no navegador, React Router ou biblioteca de componentes. O painel (Visão geral) usa GET /saldo
+para o saldo em conta oficial e GET /saldo/mensal para receitas, despesas, sobra e saldo
+acumulado de cada mês (totais calculados no backend). As listagens com `?mes=` alimentam só
+os agrupamentos visuais do mês (categorias, semanas e recentes), em centavos.
+- categorias: lista fixa do formulário com cor e ícone; texto livre antigo aparece como "Outros".
 A camada de API contém URLs e fetch não aparece em componentes visuais.
 As decisões arquiteturais ficam somente nos [ADRs do README](README.md#decisões);
 este mapa descreve a estrutura atual. `.gitignore` protege ambientes locais também
