@@ -17,7 +17,7 @@ services:
 
   api:
     build: { context: ../backend_meusaldo, target: dev }
-    ports: ["3001:3001"]
+    ports: ["127.0.0.1:3001:3001"]
     environment:
       DATABASE_URL: postgresql://meusaldo:${POSTGRES_PASSWORD}@db:5432/meusaldo_dev?schema=public
       CORS_ORIGINS: http://localhost:3000
@@ -32,7 +32,7 @@ services:
 
   web:
     build: { context: ./meusaldo, target: dev }
-    ports: ["3000:3000"]
+    ports: ["127.0.0.1:3000:3000"]
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3001
     depends_on: [api]
