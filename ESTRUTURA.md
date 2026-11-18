@@ -7,9 +7,11 @@ Os nomes singulares receita, despesa e saldo preservam a decisão original.
 ```text
 controle_financeiro/
 ├── .gitignore
-├── .env.example          (POSTGRES_PASSWORD do Compose)
+├── .env.example          (POSTGRES_PASSWORD e DOMINIO do Compose)
 ├── compose.yaml          (desenvolvimento em containers)
 ├── compose.prod.yaml     (produção local)
+├── compose.vps.yaml      (VPS: Caddy com HTTPS na frente)
+├── Caddyfile             (proxy: /api para a API, resto para o site)
 ├── README.md
 ├── ESTRUTURA.md
 ├── ROTAS.md

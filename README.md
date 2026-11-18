@@ -78,7 +78,9 @@ porta 3001 e não rodam ao mesmo tempo, nem junto com `npm run dev`.
 | --- | --- |
 | `compose.yaml` | Desenvolvimento: db, api (target dev) e web (target dev) |
 | `compose.prod.yaml` | Produção local: db, migrate, api e web (target prod) |
-| `.env` (fora do Git) | `POSTGRES_PASSWORD`, lida só pelo Compose |
+| `compose.vps.yaml` | Soma ao prod na VPS: Caddy com HTTPS, API em `/api`, só portas 80/443 |
+| `Caddyfile` | Proxy: `/api/*` para a API (sem o prefixo), o resto para o Next.js |
+| `.env` (fora do Git) | `POSTGRES_PASSWORD` e, na VPS, `DOMINIO`; lido só pelo Compose |
 | `meusaldo/Dockerfile` | dev (`next dev`), build e prod (`output: "standalone"`) |
 | `../backend_meusaldo/Dockerfile` | dev (`tsx watch`), build (`tsc`) e prod (`node dist/server.js`) |
 
@@ -86,6 +88,63 @@ porta 3001 e não rodam ao mesmo tempo, nem junto com `npm run dev`.
 ao mudar, rode de novo com `--build`. Em produção a API usa o cookie
 `__Host-meusaldo_sessao` com `Secure`, aceito pelo navegador em `localhost`.
 Para erros, comece por `docker compose logs -f api` (ou `web`, `db`).
+
+## Deploy em VPS
+
+Na VPS o mesmo `compose.prod.yaml` sobe junto com `compose.vps.yaml`, que põe o Caddy
+na frente: ele emite e renova o certificado HTTPS sozinho (Let's Encrypt) e manda
+`https://DOMINIO/api/*` para a API e o resto para o site. Site e API no mesmo endereço
+evitam CORS entre domínios, e o cookie de sessão `Secure` funciona. API, frontend e
+banco não publicam portas; só 80 e 443 ficam abertas.
+
+**Antes:** um servidor Linux com acesso SSH e um domínio (ou subdomínio) com registro
+DNS tipo **A** apontando para o IP da VPS. As portas 80 e 443 precisam estar livres e
+liberadas no firewall do provedor. Sem domínio não há certificado e o login não funciona.
+
+**Primeira vez**, no servidor:
+
+```bash
+curl -fsSL https://get.docker.com | sh          # instala Docker e Compose (Ubuntu/Debian)
+mkdir -p ~/meusaldo && cd ~/meusaldo
+git clone https://github.com/joaozitoito/controle_financeiro.git
+git clone https://github.com/joaozitoito/backend_meusaldo.git
+cd controle_financeiro
+cp .env.example .env
+nano .env   # POSTGRES_PASSWORD forte (só letras e números) e DOMINIO=seu.dominio.com.br
+docker compose -f compose.prod.yaml -f compose.vps.yaml up -d --build
+```
+
+Abra `https://seu.dominio.com.br` e crie a conta em `/registro`. O primeiro acesso pode
+levar alguns segundos enquanto o certificado é emitido (`docker compose -f compose.prod.yaml
+-f compose.vps.yaml logs -f caddy` mostra o andamento).
+
+**Atualizar** depois de um merge:
+
+```bash
+cd ~/meusaldo/backend_meusaldo && git pull
+cd ../controle_financeiro && git pull
+docker compose -f compose.prod.yaml -f compose.vps.yaml up -d --build
+```
+
+As migrações rodam sozinhas (serviço `migrate`) antes da API subir. Os dados ficam no
+volume `meusaldo-prod_dados` e os certificados em `meusaldo-prod_caddy_data`; nunca use
+`down -v` na VPS.
+
+**Backup do banco** (gera um arquivo no servidor; copie para fora dele):
+
+```bash
+docker compose -f compose.prod.yaml -f compose.vps.yaml exec -T db pg_dump -U meusaldo meusaldo > backup-$(date +%F).sql
+```
+
+**Servidor compartilhado.** Se o professor já tiver um proxy ocupando 80/443 e indicar
+uma porta, não use `compose.vps.yaml`: mantenha o `compose.prod.yaml`, troque
+`127.0.0.1:8080:3000` pela porta indicada e peça que o proxy dele encaminhe `/api` para
+a API do mesmo jeito que o `Caddyfile` faz.
+
+**Testar o modo VPS na própria máquina:** com `DOMINIO=localhost` no `.env`, o mesmo
+comando sobe em `https://localhost` com certificado local (o navegador avisa que não é
+confiável). Se a porta 80/443 estiver bloqueada no Windows, use um domínio de teste com
+porta (`DOMINIO=localhost:8443`) e um override que publique `8443:8443` no Caddy.
 
 ## Documentação
 

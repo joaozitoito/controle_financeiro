@@ -1,0 +1,11 @@
+# Um só endereço: a API fica em /api (o prefixo é retirado antes de chegar ao Express),
+# o resto vai para o Next.js. Com um domínio real o Caddy emite o certificado sozinho;
+# com DOMINIO=localhost usa uma autoridade local, só para teste.
+{$DOMINIO} {
+	handle_path /api/* {
+		reverse_proxy api:3001
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

@@ -1,0 +1,31 @@
+# VPS: docker compose -f compose.prod.yaml -f compose.vps.yaml up -d --build
+# Soma ao compose.prod.yaml: Caddy com HTTPS automático na frente, site em https://DOMINIO,
+# API em https://DOMINIO/api. Só as portas 80 e 443 ficam abertas; API, web e banco não.
+services:
+  caddy:
+    image: caddy:2.11.9
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMINIO: ${DOMINIO:?defina DOMINIO no .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certificados: não apagar, ou o Let's Encrypt pode limitar novas emissões
+      - caddy_config:/config
+    depends_on: [web]
+
+  api:
+    ports: !reset []
+    environment:
+      CORS_ORIGINS: https://${DOMINIO}
+      TRUST_PROXY: "1"
+
+  web:
+    ports: !reset []
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: https://${DOMINIO}/api
+
+volumes:
+  caddy_data:
+  caddy_config:

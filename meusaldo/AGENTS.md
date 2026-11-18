@@ -20,7 +20,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   nem importar diretamente uma feature dentro de outra.
 - Não criar pastas vazias, mocks permanentes, emojis ou bibliotecas por conveniência.
 - A Fase 4 adiciona Docker: `Dockerfile` aqui e no backend (estágios dev, build, prod),
-  `../compose.yaml` (dev, `--watch`) e `../compose.prod.yaml` (site em 8080).
+  `../compose.yaml` (dev, `--watch`), `../compose.prod.yaml` (site em 8080) e
+  `../compose.vps.yaml` + `../Caddyfile` (VPS com HTTPS; ver "Deploy em VPS" no README).
   Nunca copiar `.env` para imagens nem escrever segredos no YAML; senha só em `../.env`.
   Ao mudar dependências, portas ou variáveis, atualizar Dockerfiles, compose e README.
 - Toda consulta/operação financeira deve restringir usuarioId da sessão no backend;
