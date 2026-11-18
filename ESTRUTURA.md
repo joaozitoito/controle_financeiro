@@ -7,6 +7,9 @@ Os nomes singulares receita, despesa e saldo preservam a decisão original.
 ```text
 controle_financeiro/
 ├── .gitignore
+├── .env.example          (POSTGRES_PASSWORD do Compose)
+├── compose.yaml          (desenvolvimento em containers)
+├── compose.prod.yaml     (produção local)
 ├── README.md
 ├── ESTRUTURA.md
 ├── ROTAS.md
@@ -73,6 +76,8 @@ controle_financeiro/
     │   └── orcamento.test.mjs
     ├── public/
     ├── .env.example
+    ├── .dockerignore
+    ├── Dockerfile        (estágios dev, build e prod standalone)
     ├── AGENTS.md
     ├── README.md
     ├── package.json
