@@ -54,12 +54,17 @@ controle_financeiro/
     │       └── components/     # pagina-saldo.tsx e graficos.tsx (SVG sem biblioteca)
     ├── shared/
     │   ├── components/
+    │   │   ├── avisos.tsx      # avisos flutuantes e confirmação (substitui window.confirm)
     │   │   ├── data-quadrada.tsx
+    │   │   ├── esqueleto.tsx   # blocos de carregamento
+    │   │   ├── folha.tsx       # painel modal sobre <dialog>, sobe de baixo no celular
+    │   │   ├── formulario-lancamento.tsx # receita, despesa ou conta, em folha
     │   │   ├── icone.tsx
-    │   │   ├── navegacao.tsx   # itens + badge de contas em aberto
+    │   │   ├── navegacao.tsx   # barra de abas no celular, lateral no desktop + badge
     │   │   ├── pagina-feature.tsx
     │   │   ├── seletor-mes.tsx
-    │   │   ├── tempo-real.tsx  # ouve /eventos e mostra o aviso
+    │   │   ├── tempo-real.tsx  # ouve /eventos e avisa o que a outra pessoa mudou
+    │   │   ├── valor-animado.tsx # moeda que conta até o novo valor
     │   │   └── gerenciador-lancamentos.tsx
     │   └── lib/
     │       ├── http.ts
@@ -94,8 +99,14 @@ controle_financeiro/
 
 - app: roteamento, metadados, cabeçalho e composição; layout preservado como Server Component.
 - features: telas e endpoints específicos. Não há importação direta entre features.
-- gerenciador-lancamentos: formulário, edição, confirmação de exclusão, filtro e
-  estados de consulta compartilhados entre receitas/despesas. Recebe uma API tipada.
+- gerenciador-lancamentos: lista do mês, filtro por categoria, totais, nova/edição em folha
+  e confirmação de exclusão, compartilhados entre receitas/despesas. Recebe uma API tipada.
+- formulario-lancamento: campos, validação e erros por campo; também usado por /contas
+  (a data vira `vencimento`) e pela Visão geral, que recebe `NovaReceita`/`NovaDespesa`
+  como slots da rota `app/saldo/page.tsx` para não importar outra feature.
+- interface: `app/template.tsx` dá um fade em cada navegação; animações CSS ficam em
+  `globals.css` e são desligadas com "reduzir movimento". `app/manifest.ts` e os ícones
+  permitem instalar como app (PWA, sem service worker).
 - financeiro: tipos do contrato, validação do formulário e formatação BRL/data.
 - saldo-api: consulta oficial de totais reutilizada pelas listas e pelo resumo.
 - sessao: cadastro/login, Context, restauração, expiração e logout; proteção das

@@ -1,11 +1,85 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@theme {
+  --ease-mola: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-surgir: surgir 0.5s var(--ease-mola) both;
+  --animate-aparecer: aparecer 0.3s ease-out both;
+  --animate-descer: descer 0.4s var(--ease-mola) both;
+  --animate-desenhar: desenhar 1.1s var(--ease-mola) both;
+  --animate-crescer-y: crescer-y 0.7s var(--ease-mola) both;
+  --animate-crescer-x: crescer-x 0.8s var(--ease-mola) both;
+  --animate-brilho: brilho 1.4s ease-in-out infinite;
+  --animate-rosca: rosca 0.9s var(--ease-mola) both;
+
+  @keyframes surgir { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+  @keyframes aparecer { from { opacity: 0; } }
+  @keyframes descer { from { opacity: 0; transform: translateY(-16px) scale(0.96); } }
+  @keyframes desenhar { from { stroke-dashoffset: 1; } }
+  @keyframes crescer-y { from { transform: scaleY(0); } }
+  @keyframes crescer-x { from { transform: scaleX(0); } }
+  @keyframes brilho { 50% { opacity: 0.5; } }
+  @keyframes rosca { from { opacity: 0; transform: rotate(-90deg) scale(0.85); } }
 }
 
 :root {
   color-scheme: light;
+}
+
+/* Rolagem da página travada enquanto uma folha ou confirmação está aberta. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* Folha (dialog): sobe de baixo no celular, aparece ao centro no desktop. */
+.folha {
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  overflow-x: hidden;
+  border-radius: 1.75rem 1.75rem 0 0;
+  background: #fff;
+  color: inherit;
+  padding: 0 0 env(safe-area-inset-bottom);
+  overscroll-behavior: contain;
+  animation: folha-subir 0.45s var(--ease-mola);
+}
+.folha::backdrop {
+  background: rgb(15 23 42 / 0.45);
+  backdrop-filter: blur(2px);
+  animation: aparecer 0.3s ease-out;
+}
+.folha[data-fechando] {
+  animation: folha-descer 0.22s ease-in forwards;
+}
+.folha[data-fechando]::backdrop {
+  animation: aparecer 0.22s ease-in reverse forwards;
+}
+@media (min-width: 640px) {
+  .folha {
+    margin: auto;
+    max-width: 32rem;
+    border-radius: 1.75rem;
+    animation-name: folha-zoom;
+  }
+  .folha[data-fechando] {
+    animation: folha-zoom 0.18s ease-in reverse forwards;
+  }
+}
+@keyframes folha-subir { from { transform: translateY(100%); } }
+@keyframes folha-descer { to { transform: translateY(100%); } }
+@keyframes folha-zoom { from { opacity: 0; transform: scale(0.94); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 button, a {
@@ -15,6 +89,10 @@ button, a {
 
 h1, h2 {
   text-wrap: balance;
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
 }
 
 :focus-visible {
@@ -40,15 +118,18 @@ h1, h2 {
 
 @layer components {
   .campo {
-    @apply block min-h-11 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 disabled:bg-slate-100;
+    @apply block min-h-12 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-base text-slate-900 transition-colors focus:border-blue-600 disabled:bg-slate-100;
   }
   .campo[aria-invalid="true"] {
     @apply border-red-700;
   }
   .botao-primario {
-    @apply inline-flex min-h-11 items-center justify-center rounded-md border border-blue-700 bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-wait disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition active:scale-[0.98] hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60;
   }
   .botao-secundario {
-    @apply inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium transition active:scale-[0.98] hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60;
+  }
+  .cartao {
+    @apply min-w-0 rounded-3xl border border-slate-200/70 bg-white p-5 shadow-[0_4px_14px_rgb(15_23_42/0.05)] sm:p-6;
   }
 }

@@ -54,7 +54,7 @@ X-MeuSaldo-Request: 1; cookies são enviados pelo navegador com credentials: inc
 3. Cadastrar receita de 100,10 e despesa de 25,80 com descrição, categoria e data.
 4. Recarregar as páginas: os registros continuam persistidos.
 5. Editar receita para 125,90 e despesa para 25,90: o saldo fica R$ 100,00.
-6. Filtrar por categoria exata e limpar o filtro. Totais gerais não são filtrados.
+6. Filtrar por categoria e voltar a "Todas". Total do mês e saldo não são filtrados.
 7. Cancelar uma exclusão; confirmar que o registro continua. Depois excluir ambos.
 8. Conferir listas vazias e saldo zerado após excluir os últimos registros.
 9. Testar formulário incompleto, teclado, URL direta, voltar e endereço inexistente.

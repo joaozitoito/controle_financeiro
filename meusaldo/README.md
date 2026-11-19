@@ -5,11 +5,12 @@ Usa App Router e organização por feature.
 
 ## Funcionalidades das Fases 2 e 3
 
-- Receitas e despesas: listar, cadastrar, editar, excluir com confirmação e filtrar por categoria exata.
+- Receitas e despesas: listar por mês, cadastrar, editar, excluir com confirmação e filtrar por categoria.
 - Resumo: saldo oficial, totais gerais e os oito lançamentos mais recentes.
 - Valores em BRL, datas sem deslocamento de fuso, validação local e erros da API por campo.
 - Carregamento, listas vazias, sucesso, erro e tentativa de recarregar sem apagar o formulário.
-- Navegação com rota ativa, 404, teclado e layout adaptável ao celular.
+- Navegação com rota ativa, 404 e teclado; no celular, barra de abas e formulários em folha.
+- Pode ser instalado na tela de início (manifest PWA); não funciona offline.
 - Cadastro, login, identificação da conta, restauração de sessão, expiração e logout.
 - Dados financeiros privados por usuário, com autorização efetiva na API.
 
@@ -52,21 +53,21 @@ senha e entre em `/login`. Sem sessão, as páginas financeiras redirecionam ao 
 O cabeçalho mostra a conta atual e o botão Sair. A sessão dura uma hora e é restaurada
 após recarregar. Nenhum token ou senha fica em localStorage/sessionStorage.
 
-Na página de receitas ou despesas, preencha descrição (3–100 caracteres), valor,
-categoria (até 60 caracteres) e data. O valor aceita vírgula ou ponto decimal, até
+Em "Nova receita"/"Nova despesa" (na página ou nos botões Entrada/Saída da Visão geral),
+preencha valor, descrição (3–100 caracteres), categoria e data (hoje por padrão). O valor aceita vírgula ou ponto decimal, até
 duas casas, sem ponto de milhar: `1250,90`. Limite por lançamento: R$ 9.999.999.999,99.
 
-Editar preenche o mesmo formulário; “Cancelar edição” descarta essa edição.
-Excluir pede confirmação no navegador. O filtro usa o nome exato da categoria.
-Os totais mostrados são gerais, inclusive com filtro ativo. As listas são ordenadas
-por data decrescente e, em empates, pelo ID.
+Editar abre o mesmo formulário em uma folha; fechar a folha descarta a edição.
+Excluir pede confirmação em uma folha do app. A lista mostra o mês escolhido e o filtro
+usa o nome exato da categoria. O total do mês e o saldo em conta vêm da API e não são
+filtrados por categoria. As listas são ordenadas por data decrescente e, em empates, pelo ID.
 
-Após salvar/excluir, lista e totais são recarregados. Se essa recarga falhar, a
-mensagem de sucesso da gravação permanece e a consulta oferece “Tentar novamente”.
-O resumo consulta os dados ao entrar na página e também tem atualização manual.
+Após salvar/excluir, um aviso flutuante confirma e lista e totais são recarregados. Se essa
+recarga falhar, a consulta oferece “Tentar novamente”. O resumo consulta os dados ao entrar
+na página e recarrega sozinho a cada alteração recebida em tempo real.
 
-Rascunhos existem somente na página atual: são preservados após falhas de envio,
-mas não após recarregar ou sair da página. Não há retry automático de gravações.
+Rascunhos existem somente na folha aberta: são preservados após falhas de envio,
+mas não após fechar a folha, recarregar ou sair da página. Não há retry automático de gravações.
 Revalidar a mesma sessão ao voltar à aba preserva o rascunho, ocultando e bloqueando
 a tela durante a verificação. Logout, expiração, erro de sessão ou troca de conta
 descartam os componentes financeiros e seus dados.

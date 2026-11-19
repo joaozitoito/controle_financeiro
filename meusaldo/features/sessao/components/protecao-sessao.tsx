@@ -19,6 +19,6 @@ export function ProtecaoSessao({ children }: { children: ReactNode }) {
     {status === "verificando" && <p role="status" className="text-sm text-slate-600">Verificando sessão…</p>}
     <div key={usuario.id} hidden={status === "verificando"} inert={status === "verificando"}>{children}</div>
   </>;
-  if (status === "erro") return <div role="alert" className="space-y-4 rounded-md border border-red-300 bg-red-50 p-4 text-red-900"><p>{erro}</p><button type="button" className="botao-secundario" onClick={() => void verificar()}>Verificar sessão novamente</button></div>;
+  if (status === "erro") return <div role="alert" className="space-y-4 rounded-2xl border border-red-300 bg-red-50 p-4 text-red-900"><p>{erro}</p><button type="button" className="botao-secundario" onClick={() => void verificar()}>Verificar sessão novamente</button></div>;
   return <p role="status" className="text-sm text-slate-600">Verificando sessão…</p>;
 }

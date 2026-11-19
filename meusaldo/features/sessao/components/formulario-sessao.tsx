@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icone } from "@/shared/components/icone";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ErroHttp } from "@/shared/lib/http";
@@ -75,16 +76,22 @@ export function FormularioSessao({ modo }: { modo: "login" | "registro" }) {
 
   if (status === "autenticado") return <p role="status" className="text-sm text-slate-600">Abrindo sua conta…</p>;
 
-  return <section aria-labelledby="titulo-acesso" className="mx-auto max-w-md space-y-5 rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
-    <div className="space-y-2"><h1 id="titulo-acesso" className="text-2xl font-semibold">{registro ? "Criar conta" : "Entrar no MeuSaldo"}</h1><p className="text-sm leading-6 text-slate-600">{registro ? "Crie sua conta para organizar suas próprias receitas e despesas." : "Acesse suas receitas, despesas e saldo."}</p></div>
-    {!registro && parametros.get("cadastro") === "sucesso" && <p role="status" className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-900">Conta criada com sucesso. Entre com seu e-mail e senha.</p>}
-    {erro && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">{erro}</p>}
+  return <div className="mx-auto max-w-md pt-4 sm:pt-10">
+    <div className="mb-8 text-center">
+      <span className="mx-auto grid size-20 animate-surgir place-items-center rounded-[1.75rem] bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-xl shadow-blue-600/30"><Icone nome="alta" className="size-10" /></span>
+      <p className="mt-5 animate-surgir text-4xl font-extrabold tracking-tight [animation-delay:80ms]">MeuSaldo</p>
+      <p className="mt-1 animate-surgir text-slate-500 [animation-delay:140ms]">Seu dinheiro, sob controle.</p>
+    </div>
+  <section aria-labelledby="titulo-acesso" className="cartao animate-surgir space-y-5 [animation-delay:200ms]">
+    <div className="space-y-1"><h1 id="titulo-acesso" className="text-2xl font-bold tracking-tight">{registro ? "Criar conta" : "Entrar"}</h1><p className="text-sm leading-6 text-slate-500">{registro ? "Organize suas receitas, despesas e contas em um só lugar." : "Bem-vindo de volta."}</p></div>
+    {!registro && parametros.get("cadastro") === "sucesso" && <p role="status" className="animate-surgir rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-900">Conta criada com sucesso. Entre com seu e-mail e senha.</p>}
+    {erro && <p role="alert" className="animate-surgir rounded-2xl border border-red-300 bg-red-50 p-3 text-sm text-red-900">{erro}</p>}
     {verificando && <p role="status" className="text-sm text-slate-600">Verificando sessão…</p>}
     <form ref={formRef} onSubmit={enviar} noValidate aria-busy={enviando}>
       <fieldset disabled={enviando || verificando} className="space-y-4">
         <legend className="sr-only">{registro ? "Dados de cadastro" : "Dados de acesso"}</legend>
         {entradas.map(([nome, label, tipo, autocomplete]) => <div key={nome} className="space-y-1.5">
-          <label htmlFor={`sessao-${nome}`} className="block text-sm font-medium">{label} <span className="text-slate-500">(obrigatório)</span></label>
+          <label htmlFor={`sessao-${nome}`} className="block text-sm font-medium text-slate-600">{label}</label>
           <input id={`sessao-${nome}`} name={nome} type={tipo} required autoComplete={autocomplete} className="campo" value={formulario[nome]} maxLength={nome === "nome" ? 100 : nome === "email" ? 254 : 256}
             autoCapitalize={nome === "email" ? "none" : undefined} spellCheck={nome === "email" ? false : undefined}
             aria-invalid={Boolean(campos[nome])} aria-describedby={[nome === "senha" && registro ? "ajuda-senha" : "", campos[nome] ? `sessao-${nome}-erro` : ""].filter(Boolean).join(" ") || undefined}
@@ -92,9 +99,10 @@ export function FormularioSessao({ modo }: { modo: "login" | "registro" }) {
           {nome === "senha" && registro && <p id="ajuda-senha" className="text-xs leading-5 text-slate-600">Use de 12 a 128 caracteres. Você pode usar uma frase longa.</p>}
           {campos[nome] && <p role="alert" id={`sessao-${nome}-erro`} className="text-sm text-red-800">{campos[nome]}</p>}
         </div>)}
-        <button type="submit" className="botao-primario w-full">{enviando ? "Aguarde…" : registro ? "Criar conta" : "Entrar"}</button>
+        <button type="submit" className="botao-primario min-h-12 w-full text-base">{enviando ? "Aguarde…" : registro ? "Criar conta" : "Entrar"}</button>
       </fieldset>
     </form>
-    <p className="text-sm text-slate-600">{registro ? "Já tem uma conta? " : "Ainda não tem conta? "}<Link href={`${registro ? "/login" : "/registro"}?retorno=${encodeURIComponent(retorno)}`} className="inline-flex min-h-11 items-center rounded font-medium text-blue-800 underline underline-offset-4">{registro ? "Entrar" : "Criar conta"}</Link></p>
-  </section>;
+    <p className="text-center text-sm text-slate-600">{registro ? "Já tem uma conta? " : "Ainda não tem conta? "}<Link href={`${registro ? "/login" : "/registro"}?retorno=${encodeURIComponent(retorno)}`} className="inline-flex min-h-11 items-center rounded font-medium text-blue-800 underline underline-offset-4">{registro ? "Entrar" : "Criar conta"}</Link></p>
+  </section>
+  </div>;
 }

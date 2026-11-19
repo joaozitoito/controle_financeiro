@@ -1,13 +1,19 @@
 import { useId } from "react";
 
-export function GraficoLinha({ valores, cor, className, rotulo }: { valores: number[]; cor: string; className?: string; rotulo?: string }) {
+export function GraficoLinha({ valores, cor, className, rotulo, suave = false }: { valores: number[]; cor: string; className?: string; rotulo?: string; suave?: boolean }) {
   const id = `grad${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const minimo = Math.min(...valores);
   const faixa = Math.max(...valores) - minimo || 1;
-  const linha = valores.map((valor, indice) => {
-    const x = valores.length === 1 ? 50 : (indice / (valores.length - 1)) * 100;
-    const y = 36 - ((valor - minimo) / faixa) * 32;
-    return `${indice ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)}`;
+  const pontos = valores.map((valor, indice) => [
+    valores.length === 1 ? 50 : (indice / (valores.length - 1)) * 100,
+    36 - ((valor - minimo) / faixa) * 32,
+  ]);
+  // Suave: curva cúbica com tangente horizontal em cada ponto (não ultrapassa os valores reais).
+  const linha = pontos.map(([x, y], indice) => {
+    if (!indice) return `M${x.toFixed(2)},${y.toFixed(2)}`;
+    if (!suave) return `L${x.toFixed(2)},${y.toFixed(2)}`;
+    const [x0, y0] = pontos[indice - 1], meio = ((x0 + x) / 2).toFixed(2);
+    return `C${meio},${y0.toFixed(2)} ${meio},${y.toFixed(2)} ${x.toFixed(2)},${y.toFixed(2)}`;
   }).join(" ");
 
   return (
@@ -18,8 +24,8 @@ export function GraficoLinha({ valores, cor, className, rotulo }: { valores: num
           <stop offset="1" stopColor={cor} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={`${linha} L100,40 L0,40 Z`} fill={`url(#${id})`} />
-      <path d={linha} fill="none" stroke={cor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <path key={`a${linha}`} d={`${linha} L100,40 L0,40 Z`} fill={`url(#${id})`} className="animate-aparecer [animation-delay:400ms] [animation-duration:800ms]" />
+      <path key={linha} d={linha} pathLength={1} strokeDasharray={1} className="animate-desenhar" fill="none" stroke={cor} strokeWidth={suave ? 3 : 2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

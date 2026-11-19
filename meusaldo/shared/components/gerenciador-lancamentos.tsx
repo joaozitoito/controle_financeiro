@@ -1,44 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { ErroHttp } from "@/shared/lib/http";
 import { consultarSaldo } from "@/shared/lib/saldo-api";
-import { CATEGORIAS } from "@/shared/lib/categorias";
-import { formatarData, formatarMoeda, validarFormulario, type ApiLancamentos, type FormularioLancamento, type Lancamento, type Totais } from "@/shared/lib/financeiro";
+import { CATEGORIAS, categoriaVisual } from "@/shared/lib/categorias";
+import { formatarData, formatarMoeda, type ApiLancamentos, type Lancamento, type Totais } from "@/shared/lib/financeiro";
+import { mesAtual, nomeMes } from "@/shared/lib/periodo";
 import { ouvirAlteracoes } from "@/shared/lib/tempo-real";
-
-const vazio: FormularioLancamento = { descricao: "", valor: "", categoria: "", data: "" };
+import { avisar, confirmar } from "./avisos";
+import { Esqueleto } from "./esqueleto";
+import { Folha } from "./folha";
+import { FormularioLancamento } from "./formulario-lancamento";
+import { Icone } from "./icone";
+import { SeletorMes } from "./seletor-mes";
+import { ValorAnimado } from "./valor-animado";
 
 export function GerenciadorLancamentos({ tipo, api }: { tipo: "receita" | "despesa"; api: ApiLancamentos }) {
-  const [formulario, setFormulario] = useState(vazio);
-  const [editando, setEditando] = useState<number>();
-  const [campos, setCampos] = useState<Record<string, string>>({});
-  const [erroOperacao, setErroOperacao] = useState("");
-  const [sucesso, setSucesso] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const ocupado = useRef(false);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [campoFoco, setCampoFoco] = useState("");
-  const [filtroDigitado, setFiltroDigitado] = useState("");
-  const [filtro, setFiltro] = useState("");
+  const [mes, setMes] = useState(mesAtual);
+  const [categoria, setCategoria] = useState("");
   const [revisao, setRevisao] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erroLista, setErroLista] = useState("");
-  const [consulta, setConsulta] = useState<{ lista: Lancamento[]; totais: Totais } | null>(null);
-  const titulo = tipo === "receita" ? "Receitas" : "Despesas";
-
-  useEffect(() => {
-    if (enviando || !campoFoco) return;
-    const elemento = formRef.current?.elements.namedItem(campoFoco);
-    if (elemento instanceof HTMLElement) elemento.focus();
-  }, [campoFoco, enviando]);
+  const [consulta, setConsulta] = useState<{ lista: Lancamento[]; doMes: Totais; geral: Totais } | null>(null);
+  const [novo, setNovo] = useState(false);
+  const [editando, setEditando] = useState<Lancamento>();
+  const [editarAberto, setEditarAberto] = useState(false);
+  const [excluindo, setExcluindo] = useState<number>();
+  const cor = tipo === "receita" ? "text-emerald-600" : "text-red-600";
 
   useEffect(() => {
     const controlador = new AbortController();
-    Promise.all([api.listar(filtro, controlador.signal), consultarSaldo(controlador.signal)])
-      .then(([lista, totais]) => {
+    Promise.all([api.listar({ categoria, mes }, controlador.signal), consultarSaldo(controlador.signal, mes), consultarSaldo(controlador.signal)])
+      .then(([lista, doMes, geral]) => {
         if (controlador.signal.aborted) return;
-        setConsulta({ lista, totais });
+        setConsulta({ lista, doMes, geral });
+        setErroLista("");
         setCarregando(false);
       })
       .catch((erro: unknown) => {
@@ -47,184 +43,109 @@ export function GerenciadorLancamentos({ tipo, api }: { tipo: "receita" | "despe
         setCarregando(false);
       });
     return () => controlador.abort();
-  }, [api, filtro, revisao]);
+  }, [api, mes, categoria, revisao]);
 
   // Recarga silenciosa quando os dados mudam (aqui ou na conta conjunta).
   useEffect(() => ouvirAlteracoes(() => setRevisao(valor => valor + 1)), []);
 
-  function recarregar() {
+  function filtrar(proximo: { mes?: string; categoria?: string }) {
+    if ((proximo.mes ?? mes) === mes && (proximo.categoria ?? categoria) === categoria) return;
     setCarregando(true);
-    setErroLista("");
-    setRevisao(valor => valor + 1);
-  }
-
-  function focar(nome: string) {
-    const elemento = formRef.current?.elements.namedItem(nome);
-    if (elemento instanceof HTMLElement) elemento.focus();
-  }
-
-  function falha(erro: unknown) {
-    setErroOperacao(erro instanceof ErroHttp ? erro.message : "Não foi possível concluir a operação.");
-    if (erro instanceof ErroHttp) {
-      setCampos(erro.campos);
-      setCampoFoco(Object.keys(erro.campos)[0] ?? "descricao");
-    }
-  }
-
-  function limparEdicao() {
-    setFormulario(vazio);
-    setEditando(undefined);
-    setCampos({});
-    setErroOperacao("");
-  }
-
-  async function salvar(evento: FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
-    if (ocupado.current) return;
-    const validacao = validarFormulario(formulario);
-    setCampos(validacao.campos);
-    setErroOperacao("");
-    setSucesso("");
-    if (!validacao.dados) {
-      focar(Object.keys(validacao.campos)[0]);
-      return;
-    }
-    ocupado.current = true;
-    setEnviando(true);
-    try {
-      await api.salvar(validacao.dados, editando);
-      setSucesso(`${tipo === "receita" ? "Receita" : "Despesa"} ${editando ? "atualizada" : "cadastrada"} com sucesso.`);
-      limparEdicao();
-      recarregar();
-    } catch (erro) {
-      falha(erro);
-    } finally {
-      ocupado.current = false;
-      setEnviando(false);
-    }
-  }
-
-  function editar(item: Lancamento) {
-    if (ocupado.current) return;
-    setEditando(item.id);
-    setFormulario({ descricao: item.descricao, valor: String(item.valor).replace(".", ","), categoria: item.categoria, data: item.data.slice(0, 10) });
-    setCampos({});
-    setErroOperacao("");
-    setSucesso("");
-    focar("descricao");
+    if (proximo.mes !== undefined) setMes(proximo.mes);
+    if (proximo.categoria !== undefined) setCategoria(proximo.categoria);
   }
 
   async function excluir(item: Lancamento) {
-    if (ocupado.current || !window.confirm(`Excluir ${tipo} “${item.descricao}” de ${formatarMoeda(item.valor)}? Esta ação não pode ser desfeita.`)) return;
-    ocupado.current = true;
-    setEnviando(true);
-    setErroOperacao("");
-    setSucesso("");
+    const sim = await confirmar({ titulo: `Excluir ${tipo}?`, texto: `“${item.descricao}” de ${formatarMoeda(item.valor)} será apagada. Esta ação não pode ser desfeita.`, acao: "Excluir", perigo: true });
+    if (!sim) return;
+    setExcluindo(item.id);
     try {
       await api.excluir(item.id);
-      if (editando === item.id) limparEdicao();
-      setSucesso(`${tipo === "receita" ? "Receita" : "Despesa"} excluída com sucesso.`);
-      recarregar();
+      avisar(`${tipo === "receita" ? "Receita" : "Despesa"} excluída.`);
+      setRevisao(valor => valor + 1);
     } catch (erro) {
-      falha(erro);
+      avisar(erro instanceof ErroHttp ? erro.message : "Não foi possível excluir.", "erro");
     } finally {
-      ocupado.current = false;
-      setEnviando(false);
+      setExcluindo(undefined);
     }
   }
 
+  const total = consulta && (tipo === "receita" ? consulta.doMes.totalReceitas : consulta.doMes.totalDespesas);
+  const nomeDoMes = nomeMes(mes).split(" ")[0].toLowerCase();
+
   return (
-    <div className="space-y-6">
-      {sucesso && <p role="status" className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">{sucesso}</p>}
-      {erroOperacao && <p role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-900">{erroOperacao} Os campos digitados foram preservados.</p>}
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SeletorMes mes={mes} onMudar={proximo => filtrar({ mes: proximo })} />
+        <button type="button" className={`botao-primario hidden gap-1.5 lg:inline-flex ${tipo === "receita" ? "border-emerald-600 bg-emerald-600 hover:bg-emerald-700" : "border-red-600 bg-red-600 hover:bg-red-700"}`} onClick={() => setNovo(true)}>
+          <Icone nome="mais" />Nova {tipo}
+        </button>
+      </div>
 
-      <section id="formulario" aria-labelledby="titulo-formulario" className={`rounded-lg border border-slate-200 border-t-4 bg-white p-5 sm:p-6 ${tipo === "receita" ? "border-t-emerald-700" : "border-t-red-700"}`}>
-        <h2 id="titulo-formulario" className="mb-4 text-lg font-semibold">{editando ? `Editar ${tipo}` : `Nova ${tipo}`}</h2>
-        <form ref={formRef} onSubmit={salvar} noValidate autoComplete="off" aria-busy={enviando}>
-          <fieldset disabled={enviando} className="grid gap-4 sm:grid-cols-2">
-            <legend className="sr-only">Dados da {tipo}</legend>
-            {([
-              ["descricao", "Descrição", "text"], ["valor", "Valor (R$)", "text"],
-              ["categoria", "Categoria", "text"], ["data", "Data", "date"],
-            ] as const).map(([nome, label, inputType]) => (
-              <div key={nome} className="min-w-0 space-y-1.5">
-                <label htmlFor={`${tipo}-${nome}`} className="block text-sm font-medium">{label} <span className="text-slate-500">(obrigatório)</span></label>
-                {nome === "categoria" ? <select
-                  id={`${tipo}-${nome}`} name={nome} required className="campo" value={formulario.categoria}
-                  aria-invalid={Boolean(campos[nome])}
-                  aria-describedby={campos[nome] ? `${tipo}-${nome}-erro` : undefined}
-                  onChange={evento => {
-                    setFormulario(anterior => ({ ...anterior, categoria: evento.target.value }));
-                    setCampos(anterior => ({ ...anterior, categoria: "" }));
-                  }}
-                >
-                  <option value="">Selecione</option>
-                  {CATEGORIAS.map(categoria => <option key={categoria.nome}>{categoria.nome}</option>)}
-                  {/* Mantém editável um registro antigo com categoria fora da lista. */}
-                  {formulario.categoria && !CATEGORIAS.some(categoria => categoria.nome === formulario.categoria) && <option>{formulario.categoria}</option>}
-                </select> : <input
-                  id={`${tipo}-${nome}`} name={nome} type={inputType} required
-                  className="campo" value={formulario[nome]}
-                  inputMode={nome === "valor" ? "decimal" : undefined}
-                  maxLength={nome === "descricao" ? 100 : undefined}
-                  min={nome === "data" ? "0001-01-01" : undefined} max={nome === "data" ? "9999-12-31" : undefined}
-                  aria-invalid={Boolean(campos[nome])}
-                  aria-describedby={[nome === "valor" ? "ajuda-valor" : "", campos[nome] ? `${tipo}-${nome}-erro` : ""].filter(Boolean).join(" ") || undefined}
-                  onChange={evento => {
-                    setFormulario(anterior => ({ ...anterior, [nome]: evento.target.value }));
-                    setCampos(anterior => ({ ...anterior, [nome]: "" }));
-                  }}
-                />}
-                {nome === "valor" && <p id="ajuda-valor" className="text-xs leading-5 text-slate-600">Ex.: 1250,90. Até duas casas decimais, sem ponto de milhar.</p>}
-                {campos[nome] && <p id={`${tipo}-${nome}-erro`} role="alert" className="text-sm text-red-800">{campos[nome]}</p>}
+      <div role="group" aria-label="Filtrar por categoria" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+        {["", ...CATEGORIAS.map(opcao => opcao.nome)].map(opcao => <button key={opcao || "todas"} type="button" aria-pressed={categoria === opcao} onClick={() => filtrar({ categoria: opcao })}
+          className={`flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium whitespace-nowrap transition duration-200 active:scale-95 ${categoria === opcao ? "bg-slate-900 text-white shadow-md shadow-slate-900/15" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-slate-300"}`}>
+          {opcao && <Icone nome={categoriaVisual(opcao).icone} className="size-4 opacity-80" />}{opcao || "Todas"}
+        </button>)}
+      </div>
+
+      {erroLista && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"><p>{erroLista}</p><button type="button" className="botao-secundario" onClick={() => { setCarregando(true); setRevisao(valor => valor + 1); }}>Tentar novamente</button></div>}
+      {carregando && !consulta && <Esqueleto rotulo={`Carregando ${tipo}s…`} blocos={["h-28", "h-72"]} />}
+
+      {consulta && total !== null && <div className={`space-y-5 transition-opacity duration-300 ${carregando ? "opacity-50" : ""}`} aria-busy={carregando}>
+        <dl className="cartao animate-surgir grid grid-cols-2 gap-4">
+          <div>
+            <dt className="text-sm text-slate-500">{tipo === "receita" ? "Recebido" : "Gasto"} em {nomeDoMes}</dt>
+            <dd className={`mt-1 text-2xl font-bold tracking-tight tabular-nums ${cor}`}><ValorAnimado valor={total} /></dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-500">Saldo em conta</dt>
+            <dd className="mt-1 text-2xl font-bold tracking-tight tabular-nums"><ValorAnimado valor={consulta.geral.saldo} /></dd>
+          </div>
+          {categoria && <p className="col-span-2 -mt-1 text-xs text-slate-500">Totais de todas as categorias. A lista abaixo mostra só {categoria}.</p>}
+        </dl>
+
+        {consulta.lista.length === 0
+          ? <div className="animate-surgir rounded-3xl border border-dashed border-slate-300 p-8 text-center">
+            <span className={`mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 ${cor}`}><Icone nome={tipo === "receita" ? "alta" : "baixa"} className="size-6" /></span>
+            <p className="mt-3 font-semibold">Nada por aqui</p>
+            <p className="mt-1 text-sm text-slate-500">{categoria ? `Nenhuma ${tipo} de ${categoria} em ${nomeDoMes}.` : `Nenhuma ${tipo} em ${nomeDoMes}.`}</p>
+            <button type="button" className="botao-secundario mt-4" onClick={() => setNovo(true)}><Icone nome="mais" />Registrar {tipo}</button>
+          </div>
+          : <ul aria-label={`${tipo === "receita" ? "Receitas" : "Despesas"} de ${nomeDoMes}`} className="cartao divide-y divide-slate-100 py-1 sm:py-2">
+            {consulta.lista.map((item, indice) => <li key={item.id} className={`flex animate-surgir items-center gap-3 py-3 transition-opacity ${excluindo === item.id ? "opacity-40" : ""}`} style={{ animationDelay: `${Math.min(indice, 10) * 35}ms` }}>
+              <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${categoriaVisual(item.categoria).fundo}`}><Icone nome={categoriaVisual(item.categoria).icone} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{item.descricao}</p>
+                <p className="truncate text-sm text-slate-500">{item.categoria} · <time dateTime={item.data.slice(0, 10)}>{formatarData(item.data).slice(0, 5)}</time></p>
               </div>
-            ))}
-            <div className="flex flex-wrap gap-3 sm:col-span-2">
-              <button type="submit" className="botao-primario">{enviando ? "Aguarde…" : editando ? "Salvar alterações" : `Cadastrar ${tipo}`}</button>
-              {editando && <button type="button" className="botao-secundario" onClick={() => { limparEdicao(); focar("descricao"); }}>Cancelar edição</button>}
-            </div>
-          </fieldset>
-        </form>
-      </section>
+              <div className="flex shrink-0 flex-col items-end sm:flex-row sm:items-center sm:gap-2">
+                <p className={`font-semibold tabular-nums ${tipo === "receita" ? "text-emerald-700" : "text-red-700"}`}>{tipo === "receita" ? "+" : "−"} {formatarMoeda(item.valor)}</p>
+                <div className="-mr-2 flex">
+                  <button type="button" className="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:scale-90 disabled:opacity-50 sm:size-11" disabled={excluindo !== undefined} title="Editar" aria-label={`Editar ${tipo}: ${item.descricao}`} onClick={() => { setEditando(item); setEditarAberto(true); }}><Icone nome="lapis" /></button>
+                  <button type="button" className="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-700 active:scale-90 disabled:opacity-50 sm:size-11" disabled={excluindo !== undefined} title="Excluir" aria-label={`Excluir ${tipo}: ${item.descricao}`} onClick={() => void excluir(item)}><Icone nome="lixeira" /></button>
+                </div>
+              </div>
+            </li>)}
+          </ul>}
+      </div>}
 
-      <section aria-labelledby="titulo-lista" aria-busy={carregando} className="space-y-4">
-        <h2 id="titulo-lista" className="text-lg font-semibold">{titulo} registradas</h2>
-        <form autoComplete="off" onSubmit={evento => { evento.preventDefault(); setFiltro(filtroDigitado.trim()); recarregar(); }}>
-          <fieldset disabled={enviando || carregando} className="flex flex-wrap items-end gap-3">
-            <legend className="sr-only">Filtrar {titulo.toLowerCase()}</legend>
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <label htmlFor="filtro-categoria" className="block text-sm font-medium">Filtrar por categoria</label>
-              <input id="filtro-categoria" name="categoria" className="campo" value={filtroDigitado} maxLength={60} onChange={evento => setFiltroDigitado(evento.target.value)} />
-            </div>
-            <button className="botao-secundario" type="submit">Filtrar</button>
-            {filtro && <button className="botao-secundario" type="button" onClick={() => { setFiltro(""); setFiltroDigitado(""); recarregar(); }}>Limpar filtro</button>}
-          </fieldset>
-        </form>
-        {filtro && <p className="break-words text-sm text-slate-600">Categoria exata: <strong>{filtro}</strong></p>}
-        {carregando && <p role="status" className="py-4 text-sm text-slate-600">Carregando {titulo.toLowerCase()}…</p>}
-        {erroLista && <div role="alert" className="space-y-3 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900"><p>{erroLista}</p><button type="button" className="botao-secundario" disabled={enviando} onClick={recarregar}>Tentar novamente</button></div>}
-        {!carregando && !erroLista && consulta && <>
-          <dl className="grid gap-4 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
-            <div><dt className="text-sm text-slate-600">Total de {titulo.toLowerCase()} (geral)</dt><dd className="mt-1 font-semibold tabular-nums">{formatarMoeda(tipo === "receita" ? consulta.totais.totalReceitas : consulta.totais.totalDespesas)}</dd></div>
-            <div><dt className="text-sm text-slate-600">Saldo geral (todas as categorias)</dt><dd className="mt-1 font-semibold tabular-nums">{formatarMoeda(consulta.totais.saldo)}</dd></div>
-          </dl>
-          {consulta.lista.length === 0
-            ? <p className="rounded-md border border-dashed border-slate-300 p-5 text-sm text-slate-600">{filtro ? `Nenhuma ${tipo} nesta categoria. Limpe o filtro para ver todos os registros.` : `Nenhuma ${tipo} cadastrada. Use o formulário acima para começar.`}</p>
-            : <ul aria-label={`Lista de ${titulo.toLowerCase()}`} className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
-              {consulta.lista.map(item => <li key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium [overflow-wrap:anywhere]">{item.descricao}</p>
-                  <p className="mt-1 text-sm text-slate-600 [overflow-wrap:anywhere]">{item.categoria} <span aria-hidden="true"> / </span><time dateTime={item.data.slice(0, 10)}>{formatarData(item.data)}</time></p>
-                </div>
-                <p className={`shrink-0 font-semibold tabular-nums ${tipo === "receita" ? "text-emerald-800" : "text-red-800"}`}>{formatarMoeda(item.valor)}</p>
-                <div className="flex shrink-0 gap-2">
-                  <button type="button" className="botao-secundario" disabled={enviando} aria-label={`Editar ${tipo}: ${item.descricao}`} onClick={() => editar(item)}>Editar</button>
-                  <button type="button" className="botao-secundario text-red-800" disabled={enviando} aria-label={`Excluir ${tipo}: ${item.descricao}`} onClick={() => excluir(item)}>Excluir</button>
-                </div>
-              </li>)}
-            </ul>}
-        </>}
-      </section>
+      {/* Celular: botão fixo acima da barra de abas. */}
+      <div className="h-16 lg:hidden" aria-hidden="true" />
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 bg-gradient-to-t from-[#f6f8fb] from-60% px-4 pt-6 pb-3 lg:hidden">
+        <button type="button" onClick={() => setNovo(true)} className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl font-semibold text-white shadow-lg transition active:scale-[0.97] ${tipo === "receita" ? "bg-emerald-600 shadow-emerald-600/25" : "bg-red-600 shadow-red-600/25"}`}>
+          <Icone nome="mais" className="size-5" />Nova {tipo}
+        </button>
+      </div>
+
+      <Folha aberta={novo} onFechar={() => setNovo(false)} titulo={<>Nova <span className={cor}>{tipo}</span></>}>
+        <FormularioLancamento tipo={tipo} salvar={dados => api.salvar(dados)} onSalvo={() => setRevisao(valor => valor + 1)} />
+      </Folha>
+      <Folha aberta={editarAberto} onFechar={() => setEditarAberto(false)} titulo={<>Editar <span className={cor}>{tipo}</span></>}>
+        {editando && <FormularioLancamento tipo={tipo}
+          inicial={{ descricao: editando.descricao, valor: String(editando.valor).replace(".", ","), categoria: editando.categoria, data: editando.data.slice(0, 10) }}
+          salvar={dados => api.salvar(dados, editando.id)} onSalvo={() => setRevisao(valor => valor + 1)} />}
+      </Folha>
     </div>
   );
 }

@@ -10,7 +10,7 @@ export type DadosLancamento = Pick<Lancamento, "descricao" | "valor" | "categori
 export type FormularioLancamento = Omit<DadosLancamento, "valor"> & { valor: string };
 export type Totais = { totalReceitas: number; totalDespesas: number; saldo: number };
 export type ApiLancamentos = {
-  listar: (categoria: string, signal?: AbortSignal) => Promise<Lancamento[]>;
+  listar: (filtro: { categoria?: string; mes?: string }, signal?: AbortSignal) => Promise<Lancamento[]>;
   salvar: (dados: DadosLancamento, id?: number) => Promise<Lancamento>;
   excluir: (id: number) => Promise<void>;
 };
